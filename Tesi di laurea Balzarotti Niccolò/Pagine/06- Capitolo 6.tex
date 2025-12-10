@@ -1,0 +1,1675 @@
+\chapter{Sviluppo Della Web App}
+In questo capitolo vedremo come è stata sviluppata l'applicazione tramite la quale è possibile sincronizzare e mantenere aggiornati i file su diverse piattaforme cloud, usando le tecnologie spiegate nel capitolo precedente, partendo dalla struttura del database fino ad arrivare allo sviluppo del front-end.
+
+\section{Database}
+Per prima cosa mi sono occupato di costruire un diagramma ER (Entità-Relazione) sulla base delle specifiche che mi sono state assegnate per aiutarmi in seguito nella creazione vera e propria delle tabelle nel database.
+\begin{figure} [!h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{ER_DB.png}
+    \caption{ Diagramma ER per database}
+    \label{fig:ERDiagram}
+\end{figure}
+\clearpage
+Dopodiché tramite il tool web Spring Initializr (riferimento alla figura \ref{fig:Spring-initializr}) ho creato il mio progetto Spring importando le dipendenze necessarie per lo sviluppo del progetto.
+\vspace{1cm}
+\begin{lstlisting}[language = xml,  basicstyle=\tiny, caption={pom.xml finale del progetto}, captionpos=b]
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.7.15</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.bookshelf2</groupId>
+	<artifactId>demo</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>war</packaging>
+	<name>demo</name>
+	<description>Demo project for Spring Boot</description>
+	<properties>
+		<java.version>11</java.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.32</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webflux</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.10.1</version>
+		</dependency>
+		<dependency>
+			<groupId>io.projectreactor.netty</groupId>
+			<artifactId>reactor-netty-http</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-tomcat</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.thymeleaf</groupId>
+			<artifactId>thymeleaf-spring5</artifactId>
+		</dependency>
+
+
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.thymeleaf.extras</groupId>
+			<artifactId>thymeleaf-extras-springsecurity5</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-taglibs</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate.validator</groupId>
+			<artifactId>hibernate-validator</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mail</artifactId>
+			<version>1.4.7</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-messaging</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jboss.aerogear</groupId>
+			<artifactId>aerogear-otp-java</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>0.7</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
+
+\end{lstlisting}
+A questo punto, avendo lo scheletro del progetto, ho creato il file \textit{docker-compose.yml} per dockerizzare in un container l'immagine del db Mysql che ho utilizzato.
+\begin{lstlisting}[basicstyle=\small, caption={File di configurazione docker-compose.yml.}, captionpos=b, label={lst:yml}]
+version: '3.8'
+
+networks:
+  default:
+
+services:
+  db:
+    platform: linux/x86_64
+    image: mysql:5.7
+    container_name: book
+    ports:
+      - 3306:3306
+    volumes:
+      - "./.data/db:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: pass
+      MYSQL_DATABASE: book
+\end{lstlisting}
+Una volta creato il db e reso disponibile con docker, sono passato alla creazione delle classi delle mie entità in modo tale che JPA riuscisse a creare le rispettive tabelle nel database una volta configurato nelle \textit{application.properties} del progetto.
+\begin{lstlisting}[basicstyle=\small, caption={Configurazione del db in application.properties.}, captionpos=b, label={lst:yml}]
+spring.datasource.url=jdbc:mysql://localhost:3306/book
+spring.datasource.username=root
+spring.datasource.password=pass
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.database-platform=org.hibernate.dialect.MySQL5InnoDBDialect
+\end{lstlisting}
+\section{Entità}
+Infatti con l'utilizzo di JPA, Hibernate e la configurazione \textit{spring.jpa.hibernate.ddl-auto=create} le tabelle verranno create in automatico ad ogni avvio dell'applicazione grazie alle annotatzioni presenti nelle classi Java di ogni entità:
+\begin{itemize}
+    \item @Entity: per definire la classe come entità da mappare su una tabella.
+    \item @Table: per definire il nome della tabella.
+    \item @Id, @GeneratedValue: per identificare la chiave primaria in modo autoincrementale.
+    \item @OneToOne, @OneToMany: servono per identificare le eventuali relazioni tra tabelle per la gestione della chiave esterna.
+    \item @JsonManagedReference: serve a risolvere i problemi di ricorsione infinita quando ci sono relazioni.
+    \item @Transient: serve ad indicare che questo campo non andrà mappato nella tabella sul DB.
+\end{itemize}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={Esempio classe user.}, captionpos=b] 
+@Entity
+@Table(name = "users")
+@NamedQueries({@NamedQuery(name = User.USER_REPORT, query = User.USER_REPORT_JPQL)})
+public class User {
+
+    public static final String USER_REPORT = "User.userReport";
+    public static final String USER_REPORT_JPQL = "select u.id,u.email,u.is_using_2FA,u.enabled from User u where u.email = ?1";
+
+    @Transient
+    private String secret;
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotEmpty(message = "password cannot be empty.")
+    @Column(name = "password")
+    private String password;
+
+    @Column(name = "is_using_2FA")
+    private Boolean isUsing2FA = false;
+
+    @Column(name = "enabled")
+    private Boolean enabled = false;
+
+    @JsonManagedReference
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval=true,fetch = FetchType.LAZY)
+    private List<Authorities> authorities = new ArrayList<>();
+
+    @JsonManagedReference
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval=true,fetch = FetchType.LAZY)
+    private List<FileInfo> fileInfoList = new ArrayList<>();
+
+     @JsonManagedReference
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval=true,fetch = FetchType.LAZY)
+    private List<Company> fileInfoList = new ArrayList<>();
+}
+\end{lstlisting}
+\clearpage
+\section{Repository e Service}
+In un'app Spring Boot strutturata con JPA è possibile riconoscere tre strati tipici:
+\begin{itemize}
+    \item Repository: comunica col DB e ci permette di accedere ai dati tramite operazioni CRUD.
+    \item Service: un'interfaccia che definisce le operazioni di business.
+    \item ServiceImpl: implementa la logica di business sfruttando i repository.
+\end{itemize}
+\subsection{Repository}
+Il repository, che solitamente è un'interfaccia utilizzata dai nostri service, è la parte che si occupa di comunicare con il database eseguendo le operazioni richieste dai service.
+Per identificare una classe o un'interfaccia come repository basta utilizzare semplicemente l'annotazione \textit{@Repository}, inoltre grazie all'uso di JPA è possibile estenderla con la classe \textit{JpaRepository<Entità,Tipo>} che fornisce in automatico tutte le operazioni CRUD senza la necessità di doverle implementare. Tra le parentesi angolate basterà specificare la classe dell'entità a cui ci stiamo riferendo e il tipo del suo id, di seguito un esempio del repository per la classe user:
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\small, caption={Esempio repository user.}, captionpos=b] 
+
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    User userReport(String email);
+
+}
+
+\end{lstlisting}
+\clearpage
+\subsection{Service}
+In mezzo alla comunicazione tra controller e repository vi è l'interfaccia Service che si occupa di definire i metodi che vengono chiamati dai controller in base alle esigenze, di seguito un esempio del Service per la classe user:
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\small, caption={Esempio repository user.}, captionpos=b] 
+
+public interface UserService {
+
+    User save(User user);
+
+    String findByEmail(String email);
+
+}
+
+
+\end{lstlisting}
+\subsection{ServiceImpl}
+Infine abbiamo la classe ServiceImpl, creata con l'utilizzo dell'annotazione @Service, questa è l'implementazione vera e propria dei metodi sfruttando il nostro Repository iniettato come dipendenza tramite annotazione @Autowired, di seguito un esempio di ServiceImpl per la classe user:
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\small, caption={Esempio ServiceImpl user.}, captionpos=b] 
+
+@Service
+public class UserServiceImpl implements UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    @Transactional
+    public User save(User user){
+        return userRepository.save(user);
+    }
+
+    @Override
+    public String findByEmail(String email) {
+        return userRepository.userReport(email);
+    }
+}
+
+\end{lstlisting}
+\clearpage
+Qui possiamo notare due metodi:
+\begin{itemize}
+    \item save: è il metodo che ci permette di salvare un nuovo user in fase di registrazione richiamando direttamente uno dei metodi del repository.
+    \item findByEmail: è un metodo che richiama la query custom (userReport) che abbiamo creato nella classe User che ci permette di ottenere tutti i dati di un singolo user cercandolo con la sua email univoca.
+\end{itemize}
+\clearpage
+\section{Controller}
+Un controller in un'applicazione web è il componente che si occupa di gestire le richieste dell'utente senza però occuparsi della logica di business.
+Può gestire richieste di URL, parametri, body HTTP (GET,POST,PUT,DELETE), mandare una risposta all'utente che può essere una pagina HTML o un file JSON oppure richiamare uno dei metodi del Service.
+In questo capitolo vedremo i controller principali dell'applicazione che permettono di eseguire le funzioni principali per le quali l'app è stata pensata.
+Quasi ogni controller di questa web app è annotato con @RestController, questo serve a specificare che il controller viene utilizzato per creare servizi Web che restituiscono dati JSON o XML ed è un controller con @ResponseBody incorporato.
+\subsection{Registration controller} \label{registrazione}
+Questo controller è composto da due metodi principali:
+\begin{itemize}
+    \item registrazione: questo metodo è denotato da \textit{@GetMapping}; questa notazione serve per gestire le richieste del browser. In questo caso, se nell'url è presente l'endpoint "/registration", il controller restituisce come risposta una stringa che verrà poi letta da Angular per mostrare la pagina corretta, in questo caso la pagina di registrazione.
+    \item addUser: questo metodo è denotato da \textit{@PostMapping}. Questa notazione serve per gestire richieste di tipo POST, quindi quando il nostro front-end invia dati al nostro back-end.
+    In questo caso, infatti, il metodo riceve in input i parametri di registrazione di un nuovo utente: email, password e la conferma di quest'ultima.
+    Ogni utente registrato ha il ruolo "USER" e solamente da DB è possibile assegnarsi il ruolo "ADMIN".
+    Quando i parametri in input superano tutti i controlli, la password viene criptata tramite \textit{user.setPassword(passwordEncoder.encode(user.getPassword()));} e l'utente viene registrato. Successivamente viene creato un evento \textit{OnCreateAccountEvent} che vedremo in seguito.
+\end{itemize}
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={RegistrationController.java.}, captionpos=b] 
+
+@RestController
+public class RegistrationController {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private AuthoritiesService authoritiesService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
+
+    @Autowired
+    UserServiceImpl userServiceImpl;
+
+    @GetMapping("registration")
+    public String registrazione(){
+        return "registrazione";
+    }
+
+
+    @PostMapping("registration" )
+    public String addUser(@Valid @RequestPart("email") String email,
+                          @Valid @RequestPart("password") String password,
+                          @Valid @RequestPart("rePassword") String rePassword,
+                          BindingResult result, Map<String,Object> model,
+                          HttpServletRequest request) throws Exception {
+
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(password);
+        user.setMatchingPassword(rePassword);
+        String pass = user.getPassword();
+        String mPass = user.getMatchingPassword();
+
+        if(result.hasErrors()){
+            String string = "no-blank";
+
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            String json = objectMapper.writeValueAsString(string);
+
+            System.out.println(json);
+            return json;
+        }
+        if(pass.length() < 8 && !pass.matches(".*[A-Z].*")) {
+            //model.put("invalidEmail", "La password deve essere lunga almeno 8 caratteri e contenere una lettera maiuscola");
+            String string = "invalid-password";
+
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            String json = objectMapper.writeValueAsString(string);
+
+            System.out.println(json);
+            return json;
+        }
+        else if(!pass.equals(mPass)) {
+            //model.put("invalidEmail","Password mismatch");
+            String string = "password-mismatch";
+
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            String json = objectMapper.writeValueAsString(string);
+
+            System.out.println(json);
+            return json;
+        }else{
+            try{
+                InternetAddress email = new InternetAddress(email);
+                email.validate();
+            }catch(AddressException e){
+                //model.put("invalidEmail","Format email not correct");
+                String string = "invalid-email";
+
+                ObjectMapper objectMapper = new ObjectMapper();
+
+                String json = objectMapper.writeValueAsString(string);
+
+                System.out.println(json);
+                return json;
+            }
+            Authorities authorities = new Authorities(email, "ROLE_USER");
+            //user.getAuthorities().add(authorities); //unidirectional con joincolumn in user
+            user.addAuthorities(authorities); //bidirectional
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            try {
+
+                userService.save(user);
+            }catch (DataIntegrityViolationException e){
+                System.out.println(e.getMessage());
+                if(e.getMostSpecificCause().getMessage().contains("@")){
+                    //model.put("duplicateMail","Email already exist");
+                    String string = "duplicate-email";
+
+                    ObjectMapper objectMapper = new ObjectMapper();
+
+                    String json = objectMapper.writeValueAsString(string);
+
+                    System.out.println(json);
+                    return json;
+                }
+
+            }
+        }
+        applicationEventPublisher.publishEvent(new OnCreateAccountEvent(user,request.getLocale(),"demo"));
+
+        String string = "registered";
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        String json = objectMapper.writeValueAsString(string);
+
+        System.out.println(json);
+        return json;
+    }
+}
+
+\end{lstlisting}
+\clearpage
+\subsection{Home controller}
+Questo controller semplicemente controlla, quando si accede alla pagina principale, che l'utente che sta provando ad accedervi è autenticato correttamente inviando un JSON di risposta che verrà gestito nel front-end da Angular.
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={HomeController.java.}, captionpos=b] 
+
+@RestController
+public class HomeController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("")
+    public String home(Map<String,Object> model) throws JsonProcessingException {
+
+        SecurityContext context = SecurityContextHolder.getContext();
+        Authentication authentication = context.getAuthentication();
+        System.out.println(authentication);
+        Object principal = authentication.getPrincipal();
+
+        if(principal == "anonymousUser"){
+            model.put("role",authentication.getAuthorities().toString());
+        }else {
+            String email = authentication.getEmail();
+            model.put("email",email);
+            model.put("role",authentication.getAuthorities().toString());
+
+        }
+        String string = "";
+        if (authentication.isAuthenticated()) {
+             string = "auth";
+        }else{
+             string = "no-auth";
+        }
+
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        String json = objectMapper.writeValueAsString(string);
+
+        System.out.println(json);
+
+        return json;
+    }
+}
+
+
+\end{lstlisting}
+\clearpage
+\subsection{Create company controller}
+Anche questo controller, come il registration che abbiamo visto precedentemente, tramite il metodo \textit{addCompany} si occupa semplicemente di ricevere i dati relativi all'azienda dal front-end, controllare eventuali errori e, in caso non ci fossero, aggiungere l'azienda nella relativa tabella sul DB.
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={CreateCompanyController.java.}, captionpos=b] 
+
+@RestController
+public class CreateCompanyController {
+
+    @Autowired
+    CompanyService companyService;
+
+    @PostMapping("/createCompany")
+    public String addCompany(@Valid @RequestPart("name") String name,
+                             @RequestPart("piva") String piva,
+                             @RequestPart("telefono") String telefono,
+                             @RequestPart("email") String email,
+                             @RequestPart("url") String url,
+                             BindingResult result, Map<String, Object> model,
+                             HttpServletRequest request) throws Exception {
+        Company company = new Company();
+        company.setName(name);
+        company.setpIva(piva);
+        company.setTel(telefono);
+        company.setEmail(email);
+        company.setUrl(url);
+        if (name.equals("null")) {
+            String string = "no-blank";
+
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            String json = objectMapper.writeValueAsString(string);
+
+            return json;
+        }
+        if (!piva.isEmpty() && (piva.length() != 11)) {
+            String string = "invalid-piva";
+
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            String json = objectMapper.writeValueAsString(string);
+
+            return json;
+        }
+
+        if(!email.equals("null")){
+            try{
+                InternetAddress vemail = new InternetAddress(email);
+                vemail.validate();
+            }catch(AddressException e){
+                String string = "invalid-email";
+
+                ObjectMapper objectMapper = new ObjectMapper();
+
+                String json = objectMapper.writeValueAsString(string);
+
+                return json;
+            }
+        }
+        try {
+            companyService.save(company);
+        } catch (DataIntegrityViolationException e) {
+
+                String string = "duplicate-piva";
+
+                ObjectMapper objectMapper = new ObjectMapper();
+
+                String json = objectMapper.writeValueAsString(string);
+
+                return json;
+            }
+        String string = "add-company";
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        String json = objectMapper.writeValueAsString(string);
+
+        return json;
+        }
+    }
+
+
+\end{lstlisting}
+\clearpage
+\subsection{Create remote controller}
+Questo controller è fondamentale perché permette di eseguire il compito principale dell'app: quello di poter sincronizzare i file locali con una piattaforma cloud.
+Nello specifico questo controller permette di creare un remote (fondamentalmente una directory) per ogni azienda sulla piattaforma cloud Google Drive tramite il tool RClone.
+Il metodo createRemote prende in input dall'url tramite \textit{@RequestParam} l'id dell'azienda per la quale si vuole creare un remote, recupera tramite quest'ultimo il nome dell'azienda dal DB che verrà usato come nome per la directory, ed esegue una serie di comandi RClone che, essendo un tool a riga di comando, devono essere eseguiti su una console.
+Per questo ho creato una classe util (che fornisce utilità), come viene detta in gergo, che permetta di eseguire i comandi che vengono mandati in input su una console.
+\begin{itemize}
+    \item rclone config create: permette di creare il remote con il nome dell'azienda che viene passato.
+    \item rclone authorize drive: apre una pagina internet che permette di autenticarsi con l'account aziendale su Google Drive.
+    \item rclone config update: termina la configurazione impostando le variabili necessarie.
+    \item rclone lsd: stampa il risultato, mostrando se la cartella sia stata creata o meno.
+\end{itemize}
+La classe è \textit{"RcloneCommandExecutor"} e vedremo la sua implementazione in seguito.
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={createRemoteController.java.}, captionpos=b] 
+
+@RestController
+public class createRemoteController {
+    @Autowired
+    private RcloneCommandExecutor commandExecutor;
+
+    @Autowired
+    private CompanyService companyService;
+
+    @PostMapping("createRemote")
+    public String createRemote(@RequestParam("name") String idStr){
+        Company company = new Company();
+        Long id = Long.valueOf(idStr);
+        company = companyService.findById(id);
+        String name = company.getName();
+        System.out.println(name);
+        String codice="";
+        try {
+            String command = "rclone config create "+ name + " drive config_is_local=false";
+            String result = commandExecutor.getCommandOutput(command);
+            System.out.println("COMMAND " + result);
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        try {
+            String command = "rclone authorize drive";
+            String result = commandExecutor.getCommandOutput(command);
+            System.out.println("COMMAND " + result);
+            String[] arrOfStr = result.split("---");
+            result = arrOfStr[1];
+            arrOfStr = result.split(">");
+            result = arrOfStr[1];
+            result = result.replaceAll("<","").trim();
+            System.out.println("CODICE: "+result);
+            codice = result;
+
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            String command = "rclone config update "+name+" --continue --state *oauth-islocal,teamdrive,, --result true";
+            String result = commandExecutor.getCommandOutput(command);
+            System.out.println("COMMAND " + result);
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            String command = "rclone lsd "+ name + ":";
+            String result = commandExecutor.getCommandOutput(command);
+            System.out.println("COMMAND " + result);
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        company.setRemoteExist(true);
+        companyService.save(company);
+        return "remoteCreated";
+    }
+}
+
+\end{lstlisting}
+\clearpage
+\subsection{File controller}
+Anche questo controller è essenziale per il funzionamento dell'app, in quanto si occupa di gestire tutte le operazioni CRUD riguardanti i file, in particolare:
+\begin{itemize}
+    \item getLoadFile: recupera i file dal DB e li salva in un model che verrà inviato al front-end per popolare la data-grid dedicata.
+    \item addFile: permette di salvare i file caricati dal front-end in una cartella locale e ne salva i dati sul DB.
+    \item owFile: permette di sovrascrivere un file già esistente in locale e aggiornarne i dati su DB.
+    \item deleteFile: permette di eliminare i file in locale e i relativi dati su DB.
+\end{itemize}
+    Infine, la funzione fondamentale che permette la sincronizzazione dei file locali con il cloud: \textit{doBisync}.
+    Questa funzione legge i cambiamenti tra le due tabelle, file locali e file su cloud, e le aggiorna in modo tale da sincronizzarle tramite il comando RClone: \textit{rclone bisync}, eseguito sempre grazie alla nostra classe  \textit{"RcloneCommandExecutor"}.
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={FileController.java.}, captionpos=b] 
+
+@RestController
+public class FileController {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private FileInfoService fileInfoService;
+
+    @Autowired
+    private RcloneCommandExecutor commandExecutor;
+
+    @Autowired
+    private FileService fileService;
+
+    private final Path root = Paths.get("/Users/lc-service/Documents/demoBookShelf/src/main/webapp/WEB-INF/files");
+    private final Path path = Paths.get("/Users/lc-service/Documents/demoBookShelf/src/main/webapp/WEB-INF/temp");
+
+    //Carica la pagina con i file
+    @GetMapping("/loadFile")
+    public String getLoadFile(Model model, HttpServletRequest request) throws IOException {
+        List<FileInfo> fileList;
+        fileList = fileInfoService.findAllFile();
+        model.addAttribute("files", fileList);
+        return "loadFile";
+    }
+    //Upload di un file
+    @PostMapping("/loadFile")
+    @CrossOrigin(origins = "http://localhost:4200",methods = RequestMethod.POST)
+    public String addFile(@RequestParam(value = "file",required = false) MultipartFile file, Map<String, Object> model) throws IOException {
+        if (file.getOriginalFilename().contains(" ")) {
+            String string = "file-manager-invalid";
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(string);
+            return json;
+        }
+        SecurityContext context = SecurityContextHolder.getContext();
+        Authentication authentication = context.getAuthentication();
+        String username = authentication.getName();
+        User user = userService.findUser(username);
+        String filename = file.getOriginalFilename().toString();
+        String exstension = "";
+        int lastDotIndex = filename.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            exstension = filename.substring(lastDotIndex + 1);
+        }
+        LocalDateTime currentDateTime = LocalDateTime.now();
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String dateModified = currentDateTime.format(formatter);
+
+        FileInfo fileInfo = new FileInfo();
+        fileInfo.setUrl(root.toString());
+        fileInfo.setName(filename);
+        fileInfo.setDate(dateModified);
+        fileInfo.setExstension(exstension);
+        fileInfo.setUser(user);
+
+        try {
+            fileService.save(file);
+            fileInfoService.save(fileInfo);
+        } catch (Exception e) {
+
+            fileService.save(file, path);
+            String string = "file-manager-ow";
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(string);
+            return json;
+        }
+
+        String string = "file-manager";
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        String json = objectMapper.writeValueAsString(string);
+
+        System.out.println(json);
+        return json;
+    }
+
+    //sovrascrivi il file
+    @GetMapping("overwrite/{ow}")
+    public String owFile(@PathVariable(value = "ow") boolean ow) throws IOException {
+        System.out.println("overwrite");
+        if (!ow) {
+            fileService.deleteAll(path);
+            String string = "file-manager";
+
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            String json = objectMapper.writeValueAsString(string);
+
+            System.out.println(json);
+            return json;
+        } else {
+
+            File tempFile = new File("/Users/baalza/Desktop/demoBookShelf/src/main/webapp/WEB-INF/temp");
+            File[] files = tempFile.listFiles();
+            String filename = files[0].getName();
+            fileService.delete(filename);
+            LocalDateTime currentDateTime = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            String dateModified = currentDateTime.format(formatter);
+
+            FileInfo fileInfo = fileInfoService.findFile(filename);
+            fileInfo.setDate(dateModified);
+            fileInfoService.save(fileInfo);
+            Path sourceFilePath = Path.of("/Users/baalza/Desktop/demoBookShelf/src/main/webapp/WEB-INF/temp", filename);
+
+            try {
+                // Sposta il file nella directory di destinazione
+                Files.copy(sourceFilePath, root.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+                fileService.deleteAll(path);
+                /*String command = "rclone copy " + "/Users/baalza/Desktop/demoBookShelf/src/main/webapp/WEB-INF/files/" + filename + " BookShelfRemote:FileBookShelf";
+                String result = commandExecutor.getCommandOutput(command);
+                System.out.println("COMMAND " + result);*/
+                System.out.println("File spostato con successo.");
+            } catch (IOException e) {
+                System.err.println("Errore durante lo spostamento del file: " + e.getMessage());
+            }
+            String string = "file-manager-ow-true";
+
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            String json = objectMapper.writeValueAsString(string);
+
+            System.out.println(json);
+            return json;
+        }
+    }
+
+    //delete di un file
+    @GetMapping("deleteFile/{fileName}")
+    public String deleteFile(@PathVariable(value = "fileName",required = false) String fileName) throws JsonProcessingException {
+
+        fileInfoService.delete(fileName);
+        fileService.delete(fileName);
+        String string = "file-manager";
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        String json = objectMapper.writeValueAsString(string);
+
+        return json;
+
+    }
+
+    @GetMapping("/execute")
+    public String executeCommand(Model model) {
+        try {
+            String command = "rclone lsd BookShelfRemote:";
+            String result = commandExecutor.getCommandOutput(command);
+            System.out.println("COMMAND " + result);
+            model.addAttribute("output", result);
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            model.addAttribute("error", "Errore durante l'esecuzione del comando.");
+        }
+        return "index";
+    }
+
+    @GetMapping("bisync")
+    public String doBisync(@RequestParam(name = "ow",required = false) boolean ow,@RequestParam(name = "add",required = false) boolean add,@RequestParam(name = "delete",required = false) boolean delete) throws JsonProcessingException {
+        if(!ow && !add && !delete){
+            List<FileInfo> list = fileInfoService.findAllFile();
+            if(!list.isEmpty()) {
+                try {
+                    String command = "rclone bisync " + root + " BookShelfRemote:FileBookShelf --delete-before --force --verbose";
+                    String result = commandExecutor.getCommandOutput(command);
+                    System.out.println("COMMAND " + result);
+
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    String command = "rclone bisync " + root + " BookShelfRemote:FileBookShelf --resync --verbose";
+                    String result = commandExecutor.getCommandOutput(command);
+                    System.out.println("COMMAND " + result);
+
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }else{
+                try {
+                    String command = "rclone delete BookShelfRemote:FileBookShelf --verbose";
+                    String result = commandExecutor.getCommandOutput(command);
+                    System.out.println("COMMAND " + result);
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }else if(ow || add){
+            try {
+                String command = "rclone bisync /Users/baalza/Desktop/demoBookShelf/src/main/webapp/WEB-INF/files BookShelfRemote:FileBookShelf --resync --verbose";
+                String result = commandExecutor.getCommandOutput(command);
+                System.out.println("COMMAND " + result);
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }else if(delete){
+            List<FileInfo> list = fileInfoService.findAllFile();
+            if(!list.isEmpty()) {
+                try {
+                    String command = "rclone bisync " + root + " BookShelfRemote:FileBookShelf --delete-before --force --verbose";
+                    String result = commandExecutor.getCommandOutput(command);
+                    System.out.println("COMMAND " + result);
+
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }else{
+                try {
+                    String command = "rclone delete BookShelfRemote:FileBookShelf --verbose";
+                    String result = commandExecutor.getCommandOutput(command);
+                    System.out.println("COMMAND " + result);
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        String string = "file-manager";
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        String json = objectMapper.writeValueAsString(string);
+
+        System.out.println(json);
+        return json;
+    }
+}
+
+\end{lstlisting}
+\clearpage
+\subsection{Rest file controller}
+Questo controller è mappato su due endpoint che restituiscono rispettivamente i file locali e i file presenti su Google Drive.
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={GenerateQRcodeController.java.}, captionpos=b] 
+
+@RestController
+public class restFileController {
+
+    @Autowired
+    private FileInfoService fileInfoService;
+
+    @Autowired
+    private RcloneCommandExecutor commandExecutor;
+
+    @GetMapping("restFiles")
+    @CrossOrigin(origins = "http://localhost:4200")
+    public List<FileInfo> restFiles() {
+        List<FileInfo> files = fileInfoService.findAllFile();
+        Collections.reverse(files);
+        return files;
+    }
+
+    @GetMapping("restFiles-drive")
+    @CrossOrigin(origins = "http://localhost:4200")
+    public List<FileInfo> restFilesDrive() throws IOException, InterruptedException {
+        List <FileInfo> fileList = new ArrayList<>();
+        String command = "rclone lsjson BookShelfRemote:FileBookShelf";
+        String result = commandExecutor.getCommandOutput(command);
+        JsonArray jsonArray = new Gson().fromJson(result, JsonArray.class);
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
+            String name = jsonObject.get("Name").getAsString();
+            String modTime = jsonObject.get("ModTime").getAsString();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            String cleanedDateString = modTime.substring(0, modTime.indexOf('.'));
+            cleanedDateString = cleanedDateString.replace("T"," ");
+            LocalDateTime localDateTime = LocalDateTime.parse(cleanedDateString, formatter);
+            Duration duration = Duration.ofHours(2);
+            LocalDateTime newDateTime = localDateTime.plus(duration);
+            String dateModified = newDateTime.format(formatter);
+            FileInfo file = new FileInfo(name,dateModified);
+            fileList.add(file);
+            System.out.println("Name: " + name);
+            System.out.println("ModTime: " + dateModified);
+            System.out.println("Formatted Date: "+dateModified);
+        }
+        return fileList;
+    }
+}
+
+\end{lstlisting}
+\clearpage
+\subsection{Generate QR-code controller}
+Questo controller permette di abilitare l'autenticazione 2FA a discrezione dell'utente.
+Si compone di due metodi:
+\begin{itemize}
+    \item generateQRUrl: questo metodo partendo da un URL base di quickchart.io per qr-code costruisce l'url che permette di essere scansionata con Google Authenticator e impostare il 2FA.
+    L'url base viene combinata con una stringa segreta generata per ogni utente al momento del processo di abilitazione della 2FA.
+    \item getQrcode: questo metodo controlla che l'utente sia autenticato, in caso positivo aggiorna il campo isUsing2FA, se true, lo aggiorna e richiama il metodo \textit{generateQRUrl} per generare l'url che viene passata al front-end, il quale mostrerà il QR code da scansionare all'utente.
+    
+\end{itemize}
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={GenerateQRcodeController.java.}, captionpos=b] 
+
+@RestController
+public class GenerateQRcodeController {
+
+    @Autowired
+    private ApplicationContext applicationContext;
+
+    @Autowired
+    private UserService userService;
+    public static String QR_PREFIX =
+            "https://quickchart.io/chart?chs=200x200&chld=M%%7C0&cht=qr&chl=";
+    @Value("${spring.application.name}")
+    public String APP_NAME;
+
+    public String generateQRUrl(User user) throws UnsupportedEncodingException {
+
+        String SK = user.getSecret().toUpperCase().toString().trim();
+        return   QR_PREFIX +URLEncoder.encode(String.format(
+                        "otpauth://totp/%s:%s?secret=%s&issuer=%s",
+                        APP_NAME, user.getUsername(), SK, APP_NAME),
+                "UTF-8");
+    }
+
+    @GetMapping("qrcode")
+    @CrossOrigin(origins = "http://localhost:4200")
+    public String getQrcode(Map<String, Object> model) throws UnsupportedEncodingException, JsonProcessingException {
+        SecurityContext context = SecurityContextHolder.getContext();
+        Authentication authentication = context.getAuthentication();
+        Collection<? extends GrantedAuthority> authorities=authentication.getAuthorities();
+        String username = authentication.getName();
+        User user = userService.findUser(username);
+        user.setUsing2FA(true);
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                user, user.getPassword(), authorities);
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        userService.save(user);
+        String QRurl = generateQRUrl(user);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        String json = objectMapper.writeValueAsString(QRurl);
+
+        System.out.println(json);
+
+        return json;
+    }
+}
+
+
+\end{lstlisting}
+\clearpage
+\section{Configurazioni}
+In questa sezione andremo ad analizzare le varie configurazioni implementate per la gestione della sicurezza al fine di gestire l'autenticazione degli utenti utilizzando Spring Boot Security, gestire la parte di invio e-mail di conferma ogni volta che un utente viene registrato, implementare il 2FA login quando abilitato e creare un esecutore di comandi che permetta di eseguire i comandi RClone su terminale in totale autonomia.
+\subsection{Configurazione login e 2FA}
+Questa classe implementa Spring Security per poter gestire l'autenticazione dell'utente.
+È stata annotata con \textit{@Configuration} per indicare che è una classe di configurazione e \textit{@EnableWebSecurity} per abilitare la configurazione di sicurezza web di Spring Security.
+In particolare nel metodo \textit{"configure"} possiamo notare alcuni elementi importanti:
+\begin{itemize}
+    \item antMatchers: servono a stabilire le regole di accesso a determinati endpoint, ad esempio in base al ruolo di un utente autenticato.
+    \item loginPage e loginProcessingUrl: servono a stabilire quale pagina e quale URL saranno dedicate alla login, operazione gestita da Spring Security insieme alla logout.
+    \item  addFilterAfter: aggiunge un ulteriore filtro successivo alla login per verificare se l'utente ha abilitato il 2FA che in caso positivo verrà gestito da \textit{"twoFactorAuthenticationProvider"}.
+    \item passwordEncoder: Questo metodo utilizza BCrypt per l'hashing delle password.
+\end{itemize}
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={Classe SecurityConfig.java.}, captionpos=b] 
+
+@Configuration
+@EnableWebSecurity
+@ComponentScan("com.bookshelf2.demo")
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private BookshelfUserDetailsContextMapper ctxMapper;
+
+    @Autowired
+    AuthenticationProvider twoFactorAuthenticationProvider;
+
+    @Autowired
+    UserService userService;
+
+    @Override
+    @CrossOrigin(origins = "http://localhost:4200", methods = RequestMethod.POST)
+    protected void configure(final HttpSecurity http) throws Exception {
+
+        http
+                .cors().and()
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement()
+                .sessionFixation()
+                .migrateSession()
+                .and()
+                .authorizeRequests()
+                .antMatchers("/anonymus*").anonymous() //role anonymus
+                .antMatchers("/login*").permitAll()
+                .antMatchers("/loadFile").permitAll()
+                .antMatchers("/restFiles").authenticated()
+                .antMatchers("/createRemote").hasRole("ADMIN")
+                .antMatchers("/createCompany").hasRole("ADMIN")
+                .antMatchers("/oauth2/authorization/google").permitAll()
+                .antMatchers("/login/oauth2/code/google").permitAll()*/
+                .antMatchers("/api/**").authenticated()
+                .antMatchers("/registration*").permitAll()
+                .antMatchers("/static/**").permitAll() //resources
+                .antMatchers("/addAuthors").hasRole("USER")
+                .antMatchers("/addBooks").hasRole("USER")
+                .antMatchers("/*").permitAll()
+                .anyRequest().permitAll()
+                .and()
+                .formLogin()
+                .loginPage("http://localhost:4200/demo/login")
+                .loginProcessingUrl("/perform_login")
+
+                .successHandler((request, response, authentication) -> {
+                    Cookie customCookie = new Cookie("Authenticated", "true");
+                    customCookie.setMaxAge(86400); // Durata in secondi
+                    customCookie.setPath("/demo"); // Imposta il percorso del cookie
+                    customCookie.setHttpOnly(false);
+                    customCookie.setDomain("localhost");
+                    response.setContentType("application/json");
+                    UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+                    String role = authentication.getAuthorities().iterator().next().getAuthority();
+                    System.out.println("ruoli"+role);
+                    boolean enable = userService.findUser(userDetails.getUsername()).getUsing2FA();
+                    String email = userDetails.getUsername();
+                    Map<String, Object> responseData = new HashMap<>();
+                    responseData.put("error", false);
+                    responseData.put("2fa", enable);
+                    responseData.put("email",email);
+                    responseData.put("role",role);
+                    responseData.put("cookie", customCookie);
+                    //responseData.put("session",);
+                    response.getWriter().write(new ObjectMapper().writeValueAsString(responseData));
+                })
+                .failureHandler((request, response, exception) -> {
+                    response.setContentType("application/json");
+                    response.getWriter().write("{ \"error\": \"true\" }");
+                })
+                .permitAll()
+                .and()
+                .and()
+                .rememberMe()
+                .key("superSecretKey")
+                .tokenValiditySeconds(18000) //5 ore
+                .tokenRepository(tokenRepository())
+                .and()
+                .logout()
+                .logoutSuccessUrl("/")
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    System.out.println("logout");
+                    Cookie customCookie = new Cookie("Authenticated", "true");
+                    customCookie.setMaxAge(86400); // Durata in secondi
+                    customCookie.setPath("/demo"); // Imposta il percorso del cookie
+                    customCookie.setHttpOnly(false);
+                    customCookie.setDomain("localhost");
+                    response.setContentType("application/json");
+                    Map<String, Object> responseData = new HashMap<>();
+                    responseData.put("error", false);
+                    responseData.put("cookie", customCookie);
+                    response.getWriter().write(new ObjectMapper().writeValueAsString(responseData));
+                })
+                .logoutRequestMatcher(new AntPathRequestMatcher("/perform_logout", "GET"))
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
+                .permitAll()
+                .and()
+                
+                .addFilterAfter(new TwoFactorAuthenticationFilter("/2fa-login", userService, corsConfigurationSource()), DefaultLoginPageGeneratingFilter.class)
+                .authenticationProvider(twoFactorAuthenticationProvider); // Configura la 2FA
+
+    }
+
+    @Bean
+    public PersistentTokenRepository tokenRepository() {
+        JdbcTokenRepositoryImpl token = new JdbcTokenRepositoryImpl();
+        token.setDataSource(dataSource);
+        return token;
+    }
+
+    @Override
+    @CrossOrigin(origins = "http://localhost:4200", methods = RequestMethod.POST)
+    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
+
+        auth.jdbcAuthentication().dataSource(dataSource).passwordEncoder(passwordEncoder())
+                .and().authenticationProvider(twoFactorAuthenticationProvider);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+
+
+\end{lstlisting}
+\clearpage
+\subsection{Configurazione 2FA}
+Questa classe si occupa di validare l'OTP generato dall'autenticatore e inserito dall'utente in fase di login con 2FA abilitata.
+Il metodo \textit{"authenticate"} recupera l'OTP e la chiave segreta dell'utente, la chiave segreta viene utilizzata per creare l'oggetto \textit{"TOTP"} che a sua volta servirà per validare il codice OTP.
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={Classe TwoFactorAuthenticationProvider.java.}, captionpos=b] 
+
+@Component
+public class TwoFactorAuthenticationProvider implements AuthenticationProvider {
+private UserService userService;
+
+    public TwoFactorAuthenticationProvider(UserService userService) {
+        this.userService=userService;
+    }
+
+    @Override
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        if (!(authentication instanceof TwoFactorAuthenticationToken)) {
+            return null;
+        }
+
+        TwoFactorAuthenticationToken twoFactorAuthentication = (TwoFactorAuthenticationToken) authentication;
+        String otpCode = twoFactorAuthentication.getOtpCode();
+        SecurityContext context = SecurityContextHolder.getContext();
+        Authentication auth = context.getAuthentication();
+        String username = auth.getName();
+        System.out.println("TOTP "+otpCode);
+        User user = userService.findUser(username);
+        String SK = user.getSecret().toString().toUpperCase().trim();
+        boolean isOtpValid = validateOtpCode(otpCode);
+        Totp totp = new Totp(SK);
+        System.out.println("SK: " + SK + " " + totp.verify(otpCode));
+        if (isOtpValid && totp.verify(otpCode)) {
+            System.out.println("Codice valido");
+            // Restituisci un'istanza di Authentication riuscita
+            return authentication;
+        } else {
+            System.out.println("Codice non valido");
+            authentication.setAuthenticated(false);
+            return authentication;
+
+        }
+    }
+
+    @Override
+    public boolean supports(Class<?> authentication) {
+        return TwoFactorAuthenticationToken.class.isAssignableFrom(authentication);
+    }
+
+    private boolean validateOtpCode(String otpCode) {
+        try {
+            Long.parseLong(otpCode);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+        return true;
+    }
+}
+
+\end{lstlisting}
+\clearpage
+\subsection{Mail Sender}
+Questa classe implementa l'interfaccia \textit{ApplicationListener}, un componente che ascolta eventi pubblicati nell'ApplicationContext (contenitore Spring), nel nostro caso l'evento è: \textit{OnCreateAccountEvent}, triggerato dalla registrazione di un nuovo utente come abbiamo visto precedentemente (ref \ref{registrazione}).
+Qui sfruttiamo l'interfaccia \textit{JavaMailSender} e la dipendenza \textit{spring-boot-starter-mail} per popolare i campi di una vera e propria e-mail da inviare all'utente tramite il suo indirizzo, inserito in fase di registrazione e recuperato dall'evento creato.
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={Classe UserListener.java.}, captionpos=b] 
+
+@Component
+public class UserListener implements ApplicationListener<OnCreateAccountEvent> {
+    private String serverUrl = "http://localhost:8080/";
+
+    @Autowired
+    private JavaMailSender mailSender;
+
+    @Autowired
+    private UserService service;
+
+    @Autowired
+    private MessageSource messages;
+
+    @Autowired
+    private UserService userService;
+
+    @Override
+    public void onApplicationEvent(OnCreateAccountEvent event) {
+        this.confirmRegistration(event);
+    }
+
+    private void confirmRegistration(OnCreateAccountEvent event) {
+        User user = event.getUser();
+        String token = UUID.randomUUID().toString();
+        VerificationToken verificationToken = new VerificationToken();
+        Date expiryDate;
+        expiryDate = verificationToken.calculateExpiryDate(verificationToken.EXPIRATION);
+        System.out.println("EXPIRATON "+expiryDate);
+        service.createVerificationToken(user, user.getUsername(), token, expiryDate);
+        String recipientAddress = user.getUsername();
+        String subject = "Registration Confirmation BookShelf";
+        String confirmationUrl = event.getAppUrl() + "/account-confirmation?token=" + token;
+        String message = "Please confirm:";
+        SimpleMailMessage email = new SimpleMailMessage();
+        email.setTo(recipientAddress);
+        email.setSubject(subject);
+        String htmlContent = message + "http://localhost:4200/" + confirmationUrl + "";
+        email.setText(htmlContent);
+        mailSender.send(email);
+    }
+}
+
+\end{lstlisting}
+\clearpage
+\subsection{Esecutore dei comandi RClone}
+Questa classe permette di eseguire comandi del tool RClone, un tool a riga di comando, direttamente sulla console.
+Prende in input il comando come stringa, lo adatta e lo esegue su console tramite \textit{InputStreamReader}.
+\vspace{1cm}
+\begin{lstlisting}[language= java, basicstyle=\tiny, caption={Classe RcloneCommandExecutor.java.}, captionpos=b] 
+
+@Service
+public class RcloneCommandExecutor {
+
+    public static String getCommandOutput(String command) throws IOException, InterruptedException {
+        ProcessBuilder processBuilder = new ProcessBuilder(command.split("\\s+"));
+
+        String strArr[];
+        strArr=command.split("\\s+");
+        for(int i =0; i<strArr.length;i++){
+            System.out.println(strArr[i]);
+        }
+
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        StringBuilder output = new StringBuilder();
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            output.append(line).append("\n");
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode == 0) {
+            return output.toString();
+        } else {
+            throw new IOException("Errore durante l'esecuzione del comando: " + command);
+        }
+    }
+}
+
+\end{lstlisting}
+\clearpage
+\section{Front-end}
+Il front-end è stato sviluppato in Angular e, come precedentemente discusso, è qui che abbiamo gestito la possibilità di svolgere determinate funzioni in base al ruolo dell'utente autenticato.
+Questo è stato possibile grazie all'uso delle \textit{Guard}, un servizio che implementa un’interfaccia speciale per decidere se permettere o meno la navigazione verso una rotta oppure mostrare o no determinati elementi.
+Di seguito un esempio della dashboard presente in homepage tramite la quale le funzioni \textit{createCompany} e \textit{createRemote} sono disponibili solamente per un utente ADMIN.
+\vspace{1cm}
+\begin{lstlisting}[language= html, basicstyle=\tiny, caption={footer-nav.component.html.}, captionpos=b] 
+
+<footer>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-bottom">
+    <div class="container-fluid">
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNavDropdown">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link toasts active" aria-current="page" (click)="open(staticBackdrop)"> <fa-icon [icon]="faBars"></fa-icon></a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</footer>
+<ng-template #staticBackdrop let-content>
+  <div class="offcanvas-header">
+    <h1 class="offcanvas-title" id="offcanvasBottomLabel"></h1>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close" (click)="close()"></button>
+  </div>
+  <div class="offcanvas-body small">
+    <div class="container-fluid">
+      <div class="row users">
+        <h2>Utenti  <fa-icon class="user-canvas" [icon]="faUser"></fa-icon></h2>
+        <div class="col-auto mb-2 text-center">
+          <a class="nav-link canvas " aria-current="page" routerLink="/demo/registrazione">Registrazione</a>
+        </div>
+      </div>
+      <div class="row users pt-2">
+        <h2>Gestione  <fa-icon class="user-canvas" [icon]="faGear"></fa-icon></h2>
+        <div class="col-auto mb-2">
+          <a routerLink="/demo/company" *ngIf="role === 'ROLE_ADMIN'">
+            <button type="button" class="btn btn-primary">Aziende</button>
+          </a>
+        </div>
+        <div class="col-auto mb-2">
+          <a routerLink="/demo/create-remote" *ngIf="role === 'ROLE_ADMIN'">
+            <button type="button" class="btn btn-primary">Crea Remote</button>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</ng-template>
+
+
+\end{lstlisting}
+\clearpage
+Un'altra parte fondamentale della nostra applicazione riguarda l'utilizzo della \textit{dataGrid}, un componente che serve a mostrare dati tabellari in modo interattivo, con funzionalità avanzate come ordinamento, paginazione, filtro, editing, ecc.
+Compongono la pagina principale della web app, nella quale sono presenti due dataGrid che mostrano rispettivamente i file archiviati in locale e i file archiviati su piattaforma cloud.
+Di seguito un esempio della tabella per la gestione dei file locali:
+\vspace{1cm}
+\begin{lstlisting}[language= html, basicstyle=\tiny, caption={data-grid-fs.component.html.}, captionpos=b] 
+
+<ag-grid-angular
+  style="width: 100%; height: 400px;"
+  class="ag-theme-alpine"
+  [columnDefs]="columnDefs"
+  [defaultColDef]="defaultColDef"
+  [rowData]="rowData$ | async"
+  [rowSelection]="'multiple'"
+  [animateRows]="true"
+  (gridReady)="onGridReady($event)"
+></ag-grid-angular>
+
+\end{lstlisting}
+
+\vspace{1cm}
+\begin{lstlisting}[language= ts, basicstyle=\tiny, caption={data-grid-fs.component.ts.}, captionpos=b] 
+
+@Component({
+  selector: 'bookshelf-data-grid-fs',
+  templateUrl: './data-grid-fs.component.html',
+  styleUrls: ['./data-grid-fs.component.css']
+})
+export class DataGridFsComponent {
+
+  modalReference: NgbActiveModal | undefined;
+  component = DeleteModalComponent;
+  ngbModalOptions: NgbModalOptions = {
+    backdrop: 'static',
+    keyboard: false
+  };
+  public open(modal: any,field:any): void {
+    const active = this.modalService.open(modal, this.ngbModalOptions);
+    active.componentInstance.field = field;
+  }
+  public columnDefs: ColDef[] = [
+    { headerName: "Filename",field: 'name', comparator:(valueA,valueB,nodeA,nodeB, isDescending)=> {
+        if(valueA == valueB) return 0;
+        return(valueA> valueB) ? 1 : -1;
+      }},
+    { headerName: "Date",field: 'date',comparator:(valueA,valueB,nodeA,nodeB, isDescending)=> {
+        if(valueA == valueB) return 0;
+        return(valueA> valueB) ? 1 : -1;
+      }},
+    { headerName: "Action",field: 'name', cellRenderer: TrashButtonComponent,cellRendererParams: {
+        clicked: (field: any) => {
+          this.open(this.component,field);
+          //alert(`${field} was clicked`);
+        }
+      },
+    }
+  ];
+
+  public defaultColDef: ColDef = {
+    sortable: true,
+    filter: true,
+  };
+
+  public rowData$!: Observable<any[]>;
+  @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
+  constructor(private http: HttpClient,private modalService: NgbModal) {}
+  onGridReady(params: GridReadyEvent) {
+    const options = { headers:{}, withCredentials : true };
+    this.rowData$ = this.http
+      .get<any[]>('http://localhost:8080/demo/restFiles',options);
+  }
+}
+
+\end{lstlisting}
+\clearpage
+Nella logica di questa pagina, oltre ai metodi di definizione per mappare i dati nelle colonne, possiamo evidenziare il metodo \textit{onGridReady} che chiama il back-end all'endpoint /restFiles il cui controller restituisce tutti i file salvati in locale sotto forma di lista.
+
+
+Infine, come ultima pagina, andremo ad analizzare \textit{file-manager.component.html} al fine di mostrare le potenzialità del framework Angular.
+Infatti, come già discusso, Angular ci permette di suddividere la nostra pagina in blocchi (i component) che ci permettono di rendere le nostre pagine più compatte evitando di dover riscrivere codice che può essere utilizzato in più punti e gestirne la logica separatamente.
+Nello specifico, possiamo notare l'utilizzo dei componenti: \textit{<bookshelf-data-grid-fs>} e \textit{<bookshelf-data-grid-gd>} che sono le nostre dataGrid che mostrano i file, utilizzati semplicemente come tag HTML specificando il nome del selettore impostato nella relativa classe .ts.
+\vspace{1cm}
+\begin{lstlisting}[language= html, basicstyle=\tiny, caption={file-manager.component.html.}, captionpos=b] 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!--<noscript>
+    <meta http-equiv=refresh content='0; url=http://localhost:8080/demo/error?js=disabled'>
+  </noscript>-->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD"
+    crossorigin="anonymous"
+  />
+</head>
+<body>
+<bookshelf-navbar></bookshelf-navbar>
+<div class="container-fluid">
+  <div class="container">
+    <div class="col-auto text-center align-items-center pt-2">
+      <h1 class="pt-5">Lists of Files</h1>
+    </div>
+    <div class="row justify-content-center text-center pt-2">
+      <select class="form-select" aria-label="Default select example" >
+        <option value="" disabled selected>Seleziona un'Azienda</option>
+        <option *ngFor="let object of resp" [value]="object.id">{{ object.name }}</option>
+      </select>
+      <div class="col-2 pt-3">
+        <button #bisyncB id="sync" class="btn" type="button" (click)="bisync()"> <fa-icon [icon]="faArrowsRotate"></fa-icon></button>
+      </div>
+    </div>
+      <div *ngIf="isLoading" class="overlay">
+        <mat-spinner></mat-spinner>
+      </div>
+  </div>
+</div>
+<div class="container-fluid">
+  <div class="row text-center pt-5">
+    <div class="col-sm-12 col-md-12 col-lg-6">
+      <h1 class="pt-2">FileSystem List</h1>
+      <!-- AG Grid Angular Component for local files-->
+      <bookshelf-data-grid-fs></bookshelf-data-grid-fs>
+    </div>
+    <div class="col-sm-12 col-md-12 col-lg-6">
+      <h1 class="pt-2">GoogleDrive List</h1>
+      <!-- AG Grid Angular Component for drive files-->
+      <bookshelf-data-grid-gd></bookshelf-data-grid-gd>
+    </div>
+  </div>
+  <div class="row mt-3 justify-content-center text-center">
+    <p *ngIf="isInvalid" class="error mt-2">Nome del file non valido,rinominare il file o selezionarne un altro.</p>
+    <button type="button" class="btn btn-primary mt-3" (click)="open(staticBackdrop)">
+      Upload File
+    </button>
+  </div>
+</div>
+<!-- Modal -->
+<ng-template #staticBackdrop let-modal>
+  <div class="">
+      <div class="modal-header justify-content-center text-center">
+        <h5 class="modal-title" id="staticBackdropLabel">Upload File</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="fileForm" (submit)="onSubmit()" class="row g-3 justify-content-center" enctype="multipart/form-data">
+          <div class="col-auto">
+            <div class="mb-3">
+              <label for="formFile" class="form-label">Default file input example</label>
+              <input class="form-control" type="file" id="formFile" name="file" formControlName="file" (change)="loadFile($event)">
+            </div>
+          </div>
+          <div class="row justify-content-center">
+            <div class="col-auto">
+              <button id="submitFile" type="submit" value="submit" class="btn btn-primary mb-1">Upload File</button>
+              <a
+                href="#"
+                data-bs-toggle="tooltip"
+                data-bs-title="Seleziona un file per fare l'upload"
+              ><i class="fa-solid fa-question fa-lg ms-3"></i></a>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="close(staticBackdrop)">Close</button>
+      </div>
+    </div>
+
+</ng-template>
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
+  crossorigin="anonymous">
+</script>
+</body>
+</html>
+
+\end{lstlisting}
+\clearpage
+\section{Demo Web App}
+L'utente esegue le seguenti operazioni:
+\vspace*{\fill}
+\begin{center}
+    \begin{figure}[h]
+        \centering
+        \subsubsection{Effettua la registrazione di un utente}
+        \includegraphics[width=0.9\textwidth]{images/registrazione.png}
+        \caption{Pagina di registrazione}
+         \subsubsection{Effettua il login}
+        \includegraphics[width=0.9\textwidth]{images/login.png}
+        \caption{Pagina di login}
+        \label{fig:enter-label}
+    \end{figure}
+\end{center}
+\vspace*{\fill}
+
+\newpage
+
+\vspace*{\fill}
+\begin{center}
+    \begin{figure}[h]
+        \centering
+        \subsubsection{Effettua login 2FA}
+        \includegraphics[width=0.9\textwidth]{images/2FA.png}
+        \caption{Pagina di login con 2FA}
+         \subsubsection{Visualizza la homepage}
+        \includegraphics[width=0.9\textwidth]{images/homepage.png}
+        \caption{Home page}
+        \label{fig:enter-label}
+    \end{figure}
+\end{center}
+\vspace*{\fill}
+
+\newpage
+
+\vspace*{\fill}
+\begin{center}
+    \begin{figure}[h]
+        \centering
+        \subsubsection{Apre la sezione profilo}
+        \includegraphics[width=0.9\textwidth]{images/profile.png}
+        \caption{Dropdown profilo}
+         \subsubsection{Apre l'abilitazione 2FA}
+        \includegraphics[width=0.9\textwidth]{images/qr-code.png}
+        \caption{Pagina qr-code}
+        \label{fig:enter-label}
+    \end{figure}
+\end{center}
+\vspace*{\fill}
+
+\newpage
+
+\vspace*{\fill}
+\begin{center}
+    \begin{figure}[h]
+        \centering
+        \subsubsection{Apre la dashboard ADMIN}
+        \includegraphics[width=0.9\textwidth]{images/dashboard.png}
+        \caption{Funzioni ADMIN}
+         \subsubsection{Inserisce un'azienda}
+        \includegraphics[width=0.9\textwidth]{images/create-company.png}
+        \caption{Modal creazione azienda}
+        \label{fig:enter-label}
+    \end{figure}
+\end{center}
+\vspace*{\fill}
+
+\newpage
+
+\vspace*{\fill}
+\begin{center}
+    \begin{figure}[h]
+        \centering
+        \subsubsection{Datagrid aziende}
+        \includegraphics[width=0.9\textwidth]{images/data-company.png}
+        \caption{Pagina create-company}
+         \subsubsection{Crea un remote per l'azienda inserita}
+        \includegraphics[width=0.9\textwidth]{images/create-remote.png}
+        \caption{Pagina create-remote}
+        \label{fig:enter-label}
+    \end{figure}
+\end{center}
+\vspace*{\fill}
+
+\newpage
+
+\vspace*{\fill}
+\begin{center}
+    \begin{figure}[h]
+        \centering
+        \subsubsection{File-manager}
+        \includegraphics[width=0.8\textwidth]{images/file-manager.png}
+        \caption{Pagina file-manager}
+         \subsubsection{Esegue l'upload di un file}
+        \includegraphics[width=0.8\textwidth]{images/load-file.png}
+        \caption{Modal upload file}
+        \label{fig:enter-label}
+    \end{figure}
+\end{center}
+\vspace*{\fill}
+
+\newpage
+
+\vspace*{\fill}
+\begin{center}
+    \begin{figure}[h]
+        \centering
+        \subsubsection{File-manager}
+        \includegraphics[width=0.75\textwidth]{images/file-loaded.png}
+        \caption{File caricato correttamente}
+         \subsubsection{Esegue la funzione di sincronizzazione}
+        \includegraphics[width=0.75\textwidth]{images/bisync.png}
+        \caption{Pagina file-manager}
+        \label{fig:enter-label}
+    \end{figure}
+\end{center}
+\vspace*{\fill}
+
+\newpage
+
+\begin{center}
+    \begin{figure}[th]
+        \centering
+        \subsubsection{Mostra l'avvenuta sincronizzazione su Google Drive}
+        \includegraphics[width=1\textwidth]{images/drive-result.png}
+        \caption{Remote Google Drive}
+        \label{fig:enter-label}
+    \end{figure}
+\end{center}
+\vspace*{\fill}
+

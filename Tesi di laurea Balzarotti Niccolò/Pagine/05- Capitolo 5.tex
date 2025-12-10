@@ -1,0 +1,390 @@
+\chapter{Requisiti e Architettura dell'Applicazione}
+
+La web app che ho sviluppato è stata progettata con l'obiettivo di gestire più aziende all'interno di un unico portale accessibile in locale dall'organizzazione.
+Lo scopo principale e il problema che risolve è quello di poter caricare e gestire file e documenti per ogni azienda registrata sul portale permettendo di sincronizzare i file caricati con un servizio di cloud storage esterno (Google Drive), in modo da:
+\begin{itemize}
+    \item Garantire accessibilità ovunque.
+    \item Mantenere i file aggiornati.
+    \item Sfruttare le capacità di archiviazione e condivisione del cloud.
+    \item Prevenire una possibile perdita di dati.
+\end{itemize}
+Per la realizzazione di questa applicazione abbiamo deciso di utilizzare un servizio cloud di tipo SaaS sfruttando quindi una piattaforma fornita interamente dal provider.
+\section{Requisiti}
+La web app deve implementare i seguenti requisiti:
+\begin{itemize}
+    \item Pagina di registrazione: in questa pagina è possibile registrare un nuovo utente tramite email, con doppia verifica della password e con almeno 8 caratteri di lunghezza.
+    Una volta registrati, viene inviata una mail di conferma all'indirizzo inserito che permette di abilitare l'account ed effettuare il login.
+    \item Pagina di login: una pagina con la quale l'utente può autenticarsi tramite email (univoca) e password, quest'ultima crittografata all'interno del database tramite la funzione crittografica Bcrypt.
+    Ogni utente possiede un ruolo che permette di svolgere o meno determinate funzioni all'interno della web app, così da garantire sicurezza e controllo degli accessi.
+    Esistono due tipi di utenti:
+    \begin{itemize}
+        \item ADMIN: possiede l'accesso completo alle funzionalità della web app, in particolare a quelle che riguardano la registrazione e la gestione delle aziende sul portale e la creazione di remote (directory) all'interno della piattaforma cloud.
+        \item USER: utente normale che sfrutta la funzione principale della web app, ovvero caricare e sincronizzare file e documenti delle aziende registrate
+    \end{itemize}
+    
+    Inoltre, a discrezione dell'utente è possibile abilitare (e disabilitare) l'autenticazione a due fattori (2FA) tramite Google Authenticator per garantire una sicurezza maggiore.
+    \item HomePage: una volta eseguito il login con successo si viene reindirizzati alla homepage, in questa pagina ed in tutte le altre, ad eccezzione della login e registrazione, sono presenti delle "guardie" che rendono impossibile l'accesso, a meno che non si abbia effettuato l'autenticazione con successo reindirizzando l'utente alla pagina di login nel caso in cui l'utente non lo fosse.
+    In questa pagina è possibile accedere alle funzioni legate al profilo, tramite una dropdown list identificata dall'email dell'utente, che sono:
+   \begin{itemize}
+       \item Logout
+       \item Abilitazione della 2FA
+   \end{itemize}
+   Se si è un utente ADMIN è possibile accedere alle funzioni di gestione che sono:
+   \begin{itemize}
+       \item Registrare un nuovo utente
+       \item Registrare una nuova azienda
+       \item Creare un remote specifico per l'azienda all'interno di Google Drive (servizio che abbiamo scelto di utilizzare) nel quale poter sincronizzare i file caricati.
+   \end{itemize}
+   Infine, è possibile accedere alla funzione principale di caricamento e sincronizzazione dei file che ci reindirizzerà alla pagina di gestione dedicata.
+   \item Pagina di gestione file: questa pagina è composta da:
+   \begin{itemize}
+       \item Una dropdown list che ci permette di selezionare una delle aziende registrate per le quali vogliamo caricare dei file.
+       \item Un bottone di sincronizzazione che svolge la funzione principale di mantenere sincronizzati i file in locale con quelli in cloud.
+       \item Due dataGrid (tabelle) che mostrano rispettivamente i file salvati in locale e i file salvati su cloud, così da darci un'idea della situazione generale.
+       \item Un bottone per l'upload dei file in locale.
+   \end{itemize}
+    Inoltre è possibile visualizzare i file anche all'interno della web app.
+    \newpage
+    \item Una pagina per la registrazione delle aziende: in questa pagina è possibile registrare tramite apposito bottone nuove aziende inserendo: il nome, P.iva (univoca), numero di telefono, email ed eventuale url del sito.
+    In questa pagina è anche presente una dataGrid che ci mostra tutte le aziende registrate al momento, permettendoci di modificarne i dati o eliminarle.
+    \item Una pagina per la creazione di un remote (cartella dove sincronizzare i file per ogni azienda) su Google Drive: qui si potrà scegliere l'azienda per cui creare un remote di sincronizzazione, venendo poi guidati nella configurazione tramite RClone, un tool di cui parleremo in seguito.
+    \item Una pagina per abilitare la 2FA: in questa pagina verrà mostrato un QR code univoco, generato con quickchart.io, che l'utente dovrà scannerizzare su Google Authenticator per poter avere il proprio autenticatore che fornirà il codice da utilizzare al momento del login avendo abilitato la 2FA.
+
+\end{itemize}
+\newpage
+\vspace{2cm}
+\begin{figure}
+    \centering
+    \includegraphics[width=1.0\textwidth]{diagramma_di_flusso.png}
+    \caption{ Pagine implementate}
+    \label{fig:diagrammaDiFlussoWebApp}
+\end{figure}
+\clearpage
+\subsection{Back-end}
+Il back-end è stato implementato seguendo il pattern MVC che vedremo nel prossimo sottocapitolo insieme a tutte le tecnologie utilizzate, utilizzando il framework Spring Boot per implementare quanto segue:
+\begin{itemize}
+    \item Entità:
+        \begin{itemize}
+            \item Company
+            \item FileInfo
+            \item User
+        \end{itemize}
+        \item Controller per gestire:
+            \begin{itemize}
+                \item Registrazione
+                \item Homepage
+                \item Creazione e gestione delle aziende
+                \item Creazione e gestione dei remote
+                \item Caricamento e sincronizzazione dei file
+                \item Restituzione dei file locali e cloud
+                \item Creazione qr-code per 2FA
+                \item Varie configurazioni per la gestione della sicurezza al fine di gestire l'autenticazione degli utenti utilizzando Spring Boot Security, gestire la parte di invio dell'e-mail di conferma ogni volta che si registra un utente, implementare il login 2FA quando abilitato e creare un esecutore di comandi che permetta di eseguire i comandi RClone sul terminale in totale autonomia.
+            \end{itemize}
+            Inoltre, alcuni controller sono stati creati per esporre delle API che restituiscono informazioni al front-end riguardo ai file e alle aziende.
+\end{itemize}
+\subsection{Front-end}
+La parte di front-end deve implementare le seguenti pagine:
+\begin{itemize}
+    \item registrazione.html
+    \item login.html
+    \item homepage.html
+    \item create-company.html
+    \item create-remote.html
+    \item file-manager.html
+    \item qr-code.html
+\end{itemize}
+\subsection{Database}
+Per il database, che ci permette di mantenere e gestire tutti i dati relativi all'applicativo, abbiamo utilizzato un'immagine di mysql dockerizzata, quindi inserita all'interno di un container utilizzando l'applicativo Docker, permettendoci così di avviare e gestire il database in modo isolato e indipendente dall’ambiente di esecuzione dell'applicazione.
+Il database deve quindi implementare le seguenti tabelle:
+\begin{itemize}
+    \item Users
+    \item Authorities
+    \item Company
+    \item File
+\end{itemize}
+\newpage
+\section{Architettura dell'applicazione}
+Un'applicazione web è un software applicativo eseguito su un server web e accessibile tramite browser da un utente. Una web app è, come visto nel capitolo precedente, costituita principalmente da: \cite{Aulab}
+\begin{itemize}
+    \item Back-end: la parte che si occupa lato server di tutta la logica dell'applicativo e della comunicazione con il database.
+    \item Front-end: la parte che si occupa lato client della presentazione dei dati all'utente garantendo l'interazione tra quest'ultimo e l'applicazione.
+    \item Database: può essere opzionale ed è la parte che si occupa della gestione e della persistenza dei dati.
+\end{itemize}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{client-server.png}
+    \caption{ Architettura di un'applicazione web}
+    \label{fig:ArchitetturaClientServer}
+\end{figure}
+È fondamentale costruire una buona architettura, la struttura portante della web app, affinché questi tre elementi siano organizzati e interagiscano nel modo corretto.
+Fortunatamente esistono dei design pattern che ci aiutano in questo, nel mio caso ho deciso di utilizzare il pattern MVC (Model View Controller).
+\clearpage
+\subsection{Pattern MVC}
+Il Model-view-controller è un pattern architetturale molto diffuso nello sviluppo di sistemi software, in particolare nell'ambito della programmazione orientata agli oggetti e in applicazioni web, in grado di separare la logica di presentazione (front-end) dei dati dalla logica di business (back-end). \cite{wikiMvc}
+Questo pattern è caratterizzato da tre elementi principali:
+\begin{itemize}
+    \item Model:  fornisce i metodi necessari per accedere ai dati utili all'applicazione, nel nostro caso i model della nostra applicazione sono:
+    \begin{itemize}
+        \item User
+        \item Company
+        \item FileInfo
+    \end{itemize}
+    \item View: visualizza i dati contenuti nel model e si occupa dell'interazione con utenti e agenti, in particolare nella nostra web app si occuperà di mostrare e gestire le funzioni delle seguenti pagine:
+    \begin{itemize}
+        \item registrazione.html
+        \item login.html
+        \item homepage.html
+        \item create-company.html
+        \item create-remote.html
+        \item file-manager.html
+        \item qr-code.html
+    \end{itemize}
+    \item Controller: si occupa di implementare la logica vera e propria dell'applicazione, ricevere i comandi dell'utente (in genere attraverso la view) e attuarli modificando lo stato degli altri due componenti. Nel nostro caso i controller che abbiamo creato gestiscono:
+    \begin{itemize}
+         \item Registrazione
+            \item Homepage
+            \item Creazione e gestione delle aziende
+            \item Creazione e gestione dei remote
+            \item Caricamento e sincronizzazione dei file
+            \item Restituzione dei file locali e cloud
+            \item Creazione qr-code per 2FA
+    \end{itemize}
+\end{itemize}
+\newpage
+\begin{figure}
+    \centering
+    \includegraphics[width=1.0\textwidth]{il-pattern-mvc-1.png}
+    \caption{ Interazione tra componenti del pattern MVC}
+    \label{fig:PatternMVC}
+    \cite{aulabMvc}
+\end{figure}
+
+\clearpage
+\section{Tecnologie utilizzate per front-end}
+Per lo sviluppo del front-end ho utilizzato le seguenti tecnologie:
+\begin{itemize}
+    \item Angular
+    \item Bootstrap
+\end{itemize}
+\subsection{Angular}
+Angular è un framework open source per lo sviluppo di \textit{single-page-application} \footnote{In informatica con Single-page application (SPA) si intende un'applicazione web o un sito web che può essere usato o consultato su una singola pagina web con l'obiettivo di fornire una esperienza utente più fluida e simile alle applicazioni desktop dei sistemi operativi tradizionali. \cite{wikiSPA}} dinamiche, scalabili e performanti sviluppato da Google.
+Noto anche come Angular2 perché deriva dalla riscrittura completa di AngularJS con Typescript, un linguaggio di programmazione open source di Microsoft.
+Angular utilizza un'architettura basata sui componenti che permette agli sviluppatori di costruire interfacce e parti di interfaccia modulari e riutilizzabili. \cite{wikiAngular}
+Ogni componente è composto da:
+\begin{itemize}
+    \item Un file HTML che specifica il template, ovvero quello che deve essere mostrato in pagina.
+    \item Un file Typescript che definisce la logica e il funzionamento del componente.
+    \item Un file CSS che definisce lo stile specifico per quel componente.
+\end{itemize}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{esempio-componente-angular.png}
+    \caption{ Esempio di componente Angular}
+    \label{fig:angularComponent}
+\end{figure}
+Come abbiamo detto, Angular è scritto in TypeScript; questo linguaggio non è altro che un'estensione di Javascript che aggiunge elementi come tipi statici, interfacce, classi e la possibilità di definire funzioni anonime.
+Essendo quindi Typescript un'estensione, i programmi scritti in JavaScript possono essere eseguiti in TypeScript senza nessuna modifica.
+Altri elementi che caratterizzano Angular riguardano:
+\begin{itemize}
+    \item Data Binding: Angular supporta il two-way data binding, ovvero la possibilità di mantenere sincronizzato il valore sottostante di un dato e la sua rappresentazione nell'interfaccia grafica.
+    \item Dependency injection: Angular incorpora un sistema di Dependency injection che permette di gestire e iniettare facilmente le dipendenze dei componenti, promuovendo la modularità delle applicazioni.
+    \item Direttive: Angular estende l'HTML attraverso le direttive, attributi HTML aggiuntivi che permettono di modificare il comportamento o l'aspetto degli elementi del \textit{DOM} \footnote{In informatica il Document Object Model è una forma di rappresentazione dei documenti strutturati come modello orientato agli oggetti.\cite{wikiDOM}}.
+    \item Routing: Angular include un router che permette agli sviluppatori di definire e gestire gli stati delle applicazioni e i percorsi di navigazione, rendendo possibile costruire single page applications con strutture ad albero complesse.
+    \item Angular CLI: Il progetto Angular include l'Angular CLI, uno strumento da linea di comando che facilita la creazione e lo sviluppo di applicazioni, alcuni comandi che include sono:
+    \begin{itemize}
+        \item Il comando \textit{ng new} che permette di creare una nuova applicazione Angular.
+        \item Il comando \textit{ng generate} che permette di generare nuovi componenti con i quali è possibile comporre l'applicazione.
+        \item Il comando \textit{ng serve} che permette di avviare l'applicazione per lo sviluppo locale.
+    \end{itemize}
+\end{itemize}
+\clearpage
+\subsection{Bootstrap}
+Bootstrap è un framework di sviluppo web open source progettato per semplificare la creazione di siti responsive e mobile-first, permettendo di adattare ogni singolo componente in modo automatico e dinamico alle dimensioni dello schermo col quale si sta visualizzando l'applicazione.
+Grazie alla sua struttura basata su HTML, CSS e JavaScript, Bootstrap fornisce componenti riutilizzabili e stili pronti all’uso
+che agevolano la progettazione di interfacce web moderne, riducendo il tempo necessario per scrivere codice da zero. \cite{creativemotion}
+Il suo layout è basato su un sistema a griglia che utilizza container, righe e colonne per allineare i componenti in pagina; inoltre sfrutta sei responsive breakpoints che permettono ad ogni componente di adattarsi a qualsiasi dimensione di schermo.
+
+
+\begin{figure} [!h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{bootstrap-br.png}
+    \caption{ Responsive breakpoints in Bootstrap}
+    \label{fig:br-bootstrap}
+    \cite{bootstrap}
+\end{figure}
+
+Come abbiamo detto uno dei punti di forza di Bootstrap è quello di poter utilizzare componenti già pronti semplicemendo copiando e incollando il codice dalla documentazione nel nostro progetto, di seguito un esempio:
+\vspace{1cm}
+\begin{lstlisting}[language=html, basicstyle=\small, caption={Esempio di un componente Bootstrap (Dropdown)}, captionpos=b]
+<div class="dropdown">
+  <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Dropdown button
+  </button>
+  <ul class="dropdown-menu">
+    <li><a class="dropdown-item" href="#">Action</a></li>
+    <li><a class="dropdown-item" href="#">Another action</a></li>
+    <li><a class="dropdown-item" href="#">Something else here</a></li>
+  </ul>
+</div>
+\end{lstlisting}
+\clearpage
+\section{Tecnologie utilizzate per back-end}
+Per l'implementazione del back-end sono state utilizzate diverse tecnologie:
+\begin{itemize}
+    \item Java Spring Boot: per la gestione della logica lato server. 
+    \item Maven: un build automation tool
+    \item Tomcat: un server di applicazioni Java
+    \item Docker: per dockerizzare in un container il DB di Mysql
+    \item JPA - Hibernate: per mappare oggetti Java in tabelle di un database relazionale
+    \item RClone: tool per gestire la sincronizzazione dei file con le piattaforme cloud
+    \item BCrypt: algoritmo per l'hashing delle password
+\end{itemize}
+\subsection{Spring}
+Java Spring è un framework open source molto diffuso per la creazione di applicazioni autonome, adatte ad ambienti di produzione che vengono eseguite su JVM (Java Virtual Machine).
+Spring Framework prevede una funzione di inserimento delle dipendenze che consente agli oggetti di definire le proprie dipendenze che successivamente il container Spring provvederà ad inserire, questo permette agli sviluppatori di creare applicazioni modulari.
+Java Spring Boot invece, è uno strumento che semplifica e velocizza lo sviluppo di applicazioni web e microservizi con Spring Framework tramite tre funzionalità principali: \cite{IBMSpring}
+\begin{itemize}
+    \item Configurazione automatica:  le applicazioni vengono inizializzate con dipendenze preimpostate che non bisogna configurare manualmente.
+    Grazie alla configurazione automatica, Spring Boot è in grado di configurare sia le impostazioni di Spring sia i pacchetti di terze parti.
+    Questo consente di iniziare rapidamente a sviluppare applicazioni basate su Spring e a ridurre la possibilità di errori umani.
+    \item Approccio categorico: Spring è in grado di scegliere i pacchetti da installare e i valori da predefiniti da utilizzare,  piuttosto che lasciare all'utente il compito di prendere tutte queste decisioni e configurare tutto manualmente. 
+    Durante la creazione e configurazione del progetto è possibile selezionare le dipendenze necessarie attraverso un tool chiamato Spring Initializr (Figura \ref{fig:Spring-initializr}, dove è stata aggiunta Spring Web come dipendenza), che permette tramite un modulo web di definire le esigenze del progetto.
+    \item Applicazioni autonome: Spring Boot aiuta gli sviluppatori a creare applicazioni che sono semplicemente da eseguire. In particolare, ti consente di creare applicazioni autonome che vengono eseguite autonomamente integrando un server web come ad esempio Tomcat nell'applicazione durante il processo di inizializzazione, senza quindi dover fare affidamento su un server web esterno. 
+\end{itemize}
+\begin{figure} [!h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{Spring-initializr.png}
+    \caption{ Spring initializr}
+    \label{fig:Spring-initializr}
+\end{figure}
+\clearpage
+\subsection{Maven}
+Apache Maven è uno strumento di automazione build usato principalmente per i progetti Java. Rende più facile gestire e mantenere grandi progetti aiutando gli sviluppatori ad automatizzare il processo di build, test e distribuzione del software.
+Una delle caratteristiche principali di Maven è la sua capacità di gestire le dipendenze. Maven tiene traccia di tutte le librerie e di altre dipendenze di cui un progetto ha bisogno e le scarica automaticamente quando sono necessarie. Ciò rende facile per gli sviluppatori utilizzare librerie esterne nei loro progetti senza doverle scaricare e gestirle manualmente.
+Maven usa un approccio dichiarativo per specificare la build e le dipendenze del progetto utilizzando un file XML chiamato pom.xml (project object model). \cite{geekMaven}
+\vspace{1cm}
+\begin{lstlisting}[language = xml,  basicstyle=\tiny, caption={Esempio di pom.xml, nel quale sono state aggiunte le dipendenze web e database.}, captionpos=b]
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.2.2</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.example</groupId>
+	<artifactId>demo</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>demo</name>
+	<description>Demo project for Spring Boot</description>
+	<properties>
+		<java.version>17</java.version>
+	</properties>
+	
+	<dependencies>
+		
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
+\end{lstlisting}
+\clearpage
+\subsection{Tomcat}
+Apache Tomcat è un server web (nella forma di contenitore servlet) open source sviluppato da Apache Software Foundation. Implementa le specifiche JavaServer Pages (JSP) e servlet, fornendo quindi una piattaforma software per l'esecuzione di applicazioni web sviluppate in linguaggio Java. La sua distribuzione standard include anche le funzionalità di web server tradizionale e può essere utilizzata anche come contenitore servlet per framework come Spring. \cite{wikiTomcat}.
+Nel nostro caso è stato utilizzato per separare la logica del back-end da quella del front-end.
+In questo modo abbiamo:
+\begin{itemize}
+    \item Tomcat che gestisce esclusivamente le richieste API e la parte della logica di business del back-end.
+    \item Il server front-end che serve esclusivamente l’app Angular, occupandosi della parte grafica e dell’interazione con l'utente.
+\end{itemize}
+Con questo approccio si hanno vantaggi come separazione chiara dei ruoli, maggiore scalabilità e gestione più semplice delle performance.
+\subsection{Docker}
+Docker è una piattaforma open source che consente agli sviluppatori di creare, implementare, eseguire, aggiornare e gestire i container che sono componenti standardizzati ed eseguibili che combinano il codice sorgente dell'applicazione con le librerie e le dipendenze del sistema operativo necessarie per eseguire tale codice in qualsiasi ambiente, semplificando lo sviluppo e l'implementazione di applicazioni distribuite.
+I container sono piccoli, veloci e portabili perché, a differenza di una virtual machine (VM), non hanno bisogno di includere un sistema operativo guest in ogni istanza, ma possono invece sfruttare le funzioni e le risorse del sistema operativo host. \cite{IBMDocker}
+Nella nostra app è stato utilizzato per dockerizzare l'istanza del db mysql tramite l'esecuzione di un file yaml (\ref{fig:DockerDashboard}) con il comando: \textit{docker-compose up -d}
+\vspace{1cm}
+\begin{lstlisting}[ caption={File di configurazione docker-compose.yml.}, captionpos=b, label={lst:yml}]
+version: '3.8'
+
+networks:
+  default:
+
+services:
+  db:
+    platform: linux/x86_64
+    image: mysql:5.7
+    container_name: book
+    ports:
+      - 3306:3306
+    volumes:
+      - "./.data/db:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: pass
+      MYSQL_DATABASE: book
+\end{lstlisting}
+\clearpage
+\begin{figure}
+    \centering
+    \includegraphics[width=1.0\textwidth]{dockerDash.png}
+    \caption{Docker dashboard con container in esecuzione}
+    \label{fig:DockerDashboard}
+\end{figure}
+\clearpage
+\subsection{JPA - Hibernate}
+Java Persistence API (JPA) è un'interfaccia di programmazione che consente agli sviluppatori di lavorare con i database utilizzando Java. Viene usato per archiviare, recuperare e aggiornare i dati in un database.
+JPA si basa sulla tecnologia ORM (Object-Relational Mapping), può essere utilizzato per eseguire operazioni CRUD (creare, leggere, aggiornare ed eliminare) sui dati e fornisce una serie di API per interrogarli.
+JPA può essere implementato da vari framework ORM come Hibernate. \cite{geekandjobJpa}
+Hibernate è un ecosistema di librerie, la principale è Hibernate ORM, si tratta di un framework Java per mappare modelli di dominio orientati agli oggetti su un database relazionale. Sostanzialmente Hibernate viene usato per rendere persistenti i dati dall'ambiente Java al database. Hibernate implementa le specifiche JPA  per la \textit{persistenza dei dati}\footnote{In informatica, il concetto di persistenza si riferisce alla caratteristica dei dati di un programma di sopravvivere all'esecuzione del programma stesso che li ha creati: senza questa capacità questi infatti verrebbero salvati solo in memoria Ram venendo dunque persi allo spegnimento del computer.\cite{wikiPers}}. \cite{geekandjobHibernate}
+\vspace{1cm}
+\begin{figure} [!h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{hibernate-orm-mpping-latest.png}
+    \caption{Funzionamento di Hibernate}
+    \label{fig:hibernate-orm-mapping}
+    \cite{dzone}
+\end{figure}
+\subsubsection{ORM}
+L'Object-relational mapping (ORM) è una tecnica di programmazione che favorisce l'integrazione di sistemi software aderenti al paradigma della programmazione orientata agli oggetti  (OOP) con sistemi RDBMS (Relational Database Management System).
+Un prodotto ORM fornisce, mediante un'interfaccia orientata agli oggetti, tutti i servizi inerenti alla persistenza dei dati, astraendo nel contempo le caratteristiche implementative dello specifico RDBMS utilizzato. \cite{wikiOrm}
+\clearpage
+\subsection{RClone}
+RClone è un programma open source di sincronizzazione di file e gestione di directory che consente di gestire facilmente il backup e la sincronizzazione dei file tra il proprio dispositivo e una vasta gamma di servizi cloud, tra cui Google Drive, Amazon S3, Dropbox, Microsoft OneDrive e molti altri. RClone è noto per la sua flessibilità, efficienza e la capacità di eseguire complesse operazioni di gestione dei file attraverso una semplice interfaccia a riga di comando. \cite{managedServer}
+\vspace{1cm}
+\begin{lstlisting}[basicstyle=\small, caption={Esempio di comandi RClone.}, captionpos=b, label={lst:yml}]
+rclone ls remote:path # lists a remote
+rclone copy /local/path remote:path # copies /local/path to the remote
+rclone sync --interactive /local/path remote:path # syncs /local/path to the remote
+\end{lstlisting}
+\subsection{BCrypt}
+Bcrypt è una \textit{funzione hash crittografica}\footnote{Una funzione crittografica di hash è un algoritmo matematico che mappa dei dati di lunghezza arbitraria in una stringa binaria di dimensione fissa chiamata valore di hash, questa funzione di hash è progettata per essere unidirezionale, ovvero una funzione difficile da invertire.Una funzione crittografica di hash ideale deve avere alcune proprietà fondamentali: deve identificare univocamente il messaggio, deve essere deterministico, in modo che lo stesso messaggio si traduca sempre nello stesso hash, deve essere semplice e veloce calcolare un valore hash da un qualunque tipo di dato e deve essere molto difficile o quasi impossibile generare un messaggio dal suo valore hash se non provando tutti i messaggi possibili.\cite{wikiHash}} progettata per l’hashing delle password e per la loro conservazione in sicurezza all'interno delle applicazioni, così da renderle meno vulnerabili agli attacchi informatici basati su dizionari. La funzione è stata concepita basandosi sul complesso algoritmo Blowfish cipher.
+Bcrypt esegue un elaborato processo di hashing, durante il quale la password di un utente viene trasformata in una serie di caratteri di lunghezza fissa utilizzando una funzione hash unidirezionale; questo significa che una volta che la password è stata “hashata”, non può essere ricondotta alla sua forma originale. Ogni volta che l’utente accede al suo account, bcrypt rielabora la password e confronta il nuovo valore hash con la versione memorizzata nel sistema per verificare se le password corrispondono.
+A differenza di altri algoritmi di hashing, bcrypt aggiunge un elemento casuale, chiamato “salt”, alla password, creando un hash unico che è quasi impossibile da decifrare con tentativi automatici negli attacchi a dizionario hash e brute force. \cite{stolas}

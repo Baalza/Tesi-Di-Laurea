@@ -1,0 +1,70 @@
+\chapter{L'architettura Del Cloud Computing}
+
+Per "architettura cloud" si intende il modo in cui le singole tecnologie sono integrate per creare cloud: ambienti IT che astraggono, raggruppano e condividono risorse scalabili attraverso una rete. È anche il modo in cui tutti i componenti e le funzionalità necessarie per creare un cloud sono connessi per erogare una piattaforma online su cui eseguire le applicazioni.
+In sostanza, l'infrastruttura cloud comprende tutto il materiale necessario, mentre l'architettura cloud costituisce il progetto. \cite{RedHatArchitecture}
+
+\section{Componenti dell'architettura cloud}
+L'architettura del cloud computing integra quattro componenti essenziali per creare un ambiente IT che astrae, raggruppa e condivide risorse scalabili in uno o più ambienti cloud rendendole disponibili ai propri clienti.
+Questa architettura varia in base ai driver di business e ai requisiti tecnologici che caratterizzano un'organizzazione, ma condividono tutte lo stesso obiettivo che è quello di creare una roadmap che consideri i workload delle applicazioni, i modelli di distribuzione nel cloud, la gestione dei servizi e le esigenze di progettazione. 
+
+
+I componenti fondamentali sono:\cite{IBMArchitecture}
+\begin{itemize}
+    \item Un front-end 
+    \item Un back-end
+    \item Una rete
+    \item Una piattaforma di distribuzione basata su cloud
+\end{itemize}
+\vspace{3cm}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{cloud-architecture.png}
+    \caption{ Architettura di un modello cloud}
+    \label{fig:ArchitetturaCloud}
+    \cite{CloudArchitecture}
+\end{figure}
+
+\clearpage
+\subsection{Il front-end}
+La piattaforma front-end è l'interfaccia attraverso la quale gli utenti interagiscono direttamente con i servizi cloud e include: browser web, client e dispositivi mobili. I browser web costituiscono il punto di accesso principale per i servizi cloud, in quanto consentono agli utenti di interagire con le applicazioni e le risorse in hosting nel cloud. I client, che possono essere dispositivi o software, trasferiscono il carico dell'elaborazione e dello storage sui server cloud, migliorando l'efficienza e le prestazioni. I dispositivi mobili come smartphone e tablet accedono ai servizi cloud tramite applicazioni o browser dedicati, in modo che gli utenti si possano connettere alle risorse praticamente da qualsiasi luogo. \cite{HPECloudArchitecture}
+\subsection{Il back-end}
+Mentre il front-end include tutti gli elementi con cui il cliente interagisce, il back-end (o "lato server") è la vera e propria spina dorsale dell'architettura cloud e si riferisce alla strutturazione del sito e alla programmazione delle sue funzionalità principali. Fornisce tutta la tecnologia dietro le quinte (server cloud, database cloud,API per accedere ai file) usata dal CSP (Cloud Service Provider) per supportare il front-end, compreso l'intero codice che aiuta un database o un server Web a comunicare con un browser Web o un sistema operativo mobile.
+
+I componenti dell'architettura cloud back-end includono: \cite{IBMArchitecture}
+\begin{itemize}
+    \item Applicazioni: le applicazioni back-end sono il software o le piattaforme che forniscono le richieste di servizio client sul front-end.
+    \item Servizio di cloud computing: il servizio back-end fornisce le utility nell'architettura cloud e gestisce l'accessibilità delle risorse basate sul cloud (come servizi di storage basati sul cloud, servizi di sviluppo di applicazioni, servizi Web, servizi di sicurezza e altro).
+    \item Tempo di esecuzione nel cloud: il tempo di esecuzione fornisce l'ambiente per la messa in opera o l'esecuzione dei servizi. La virtualizzazione svolge un ruolo cruciale nell'abilitazione di più tempi di esecuzione sullo stesso server. 
+    \item Storage cloud: lo storage cloud nel back-end si riferisce al servizio di storage flessibile e scalabile oltre alla gestione dei dati archiviati per eseguire le applicazioni.
+    \item Infrastruttura: l'infrastruttura è costituita da tutte le risorse, dall'hardware back-end e da tutti i software utilizzati per eseguire e gestire i servizi basati su cloud.
+    \item Software di gestione: il middleware coordina la comunicazione tra front-end e back-end in un sistema di cloud computing. Questo componente consente la fornitura di servizi in tempo reale per garantire esperienze fluide tra utente e front-end.
+    \item Strumenti di sicurezza: gli strumenti di sicurezza forniscono la sicurezza back-end contro potenziali attacchi informatici o guasti del sistema. I firewall virtuali proteggono le applicazioni web, prevengono la perdita di dati e garantiscono il \textit{backup e il disaster recovery} \footnote{Il backup e il disaster recovery comportano la creazione o l'aggiornamento periodico di più copie dei file, la loro memorizzazione in una o più sedi remote e l'utilizzo delle copie per continuare o riprendere le operazioni aziendali in caso di perdita di dati dovuta a danneggiamenti dei file e dei dati, attacchi informatici o disastri naturali.\cite{BDR}}. I componenti di back-end includono la crittografia, la limitazione dell'accesso e i protocolli di autenticazione per proteggere i dati dalle violazioni.
+\end{itemize}
+\subsection{Una rete}
+Una rete cloud dovrebbe fornire un'elevata larghezza di banda e una bassa latenza, consentendo agli utenti di accedere costantemente ai propri dati e alle proprie applicazioni. La rete deve inoltre offrire agilità in modo che l'accesso alle risorse possa verificarsi rapidamente ed efficientemente tra server e ambiente basato sul cloud.
+Altri importanti dispositivi di rete con architettura cloud includono i bilanciatori del carico, le content delivery network (CDN) \footnote{Una CDN (Content Delivery Network) è una rete di server geograficamente dispersa per consentire prestazioni web più veloci localizzando copie di contenuti web più vicine agli utenti o facilitando la distribuzione di contenuti dinamici (ad esempio, feed video in diretta).\cite{CDN}} e la Software-Defined Networking (SDN)\footnote{L'SDN è un approccio al networking che utilizza controller software che possono essere gestiti da API per comunicare con l'infrastruttura hardware per dirigere il traffico di rete.\cite{SDN}} per garantire flussi di dati senza interruzioni e in sicurezza tra utenti front-end e risorse back-end.\cite{IBMArchitecture}
+
+\subsection{Modelli di servizio cloud}
+Per finire, come ultimo componente dell'architettura cloud troviamo i modelli di servizio cloud.
+Dei tre principali, ovvero: IaaS, PaaS e SaaS ne abbiamo già parlato nel capitolo \ref{ModelliDiServizio}, ma ne esistono anche altri altrettanto popolari, come: \cite{IBMArchitecture}
+\begin{itemize}
+    \item Serverless computing (o serverless): il serverless è un modello di sviluppo ed esecuzione di applicazioni cloud che consente agli sviluppatori di creare ed eseguire un codice senza eseguire il provisioning o gestire server o infrastrutture di back-end.
+    \item Business-Process-as-a-Service (BPaaS): BPaaS è una piattaforma di outsourcing di processi aziendali che combina servizi IaaS, PaaS e SaaS.
+    \item Function-as-a-Service (FaaS): il FaaS è un sottoinsieme di SaaS in cui il codice dell'applicazione viene eseguito solo in risposta a eventi o richieste specifiche.
+\end{itemize}
+\section{Principali tecnologie per l'architettura cloud}
+\begin{itemize}
+    \item Virtualizzazione: 
+    Fondamentale per l'architettura cloud, la virtualizzazione ha funzione di livello di astrazione che consente di suddividere le risorse hardware di un singolo computer (processori, memoria, storage e altro) in più computer virtuali noti come macchine virtuali (VM). La virtualizzazione collega i server fisici gestiti da un provider di cloud service (CSP) in numerose località, quindi divide e astrae le risorse in modo da renderle accessibili agli utenti finali ovunque sia presente una connessione a Internet. \cite{IBMArchitecture}
+    \item Automation: 
+    L'automazione del cloud implica l'implementazione di strumenti e processi che riducono o eliminano il lavoro manuale associato alla configurazione e alla gestione degli ambienti cloud. Gli strumenti di automazione del cloud vengono eseguiti su ambienti virtualizzati e svolgono un ruolo essenziale nel consentire alle organizzazioni di utilizzare al meglio i benefici del cloud computing, come la possibilità di usare le risorse nel cloud on demand e di aumentarle o ridurle in base alle necessità. L'automazione svolge un ruolo fondamentale nei flussi DevOps, accelerando le attività legate alla creazione, al test, alla distribuzione e al monitoraggio delle applicazioni, con conseguenti risparmi sui costi. \cite{IBMArchitecture}
+    \item Container: I container raggruppano un'applicazione e le sue dipendenze in una singola unità eseguibile in modo coerente in diversi ambienti di elaborazione. A differenza delle VM, i container condividono il kernel del sistema operativo host, il che li rende leggeri e più rapidi da avviare. Per questo motivo i container risultano ideali per le architetture dei microservizi, in cui le applicazioni sono suddivise in servizi più piccoli e gestibili. I container migliorano la portabilità e la coerenza, garantendo che le applicazioni vengano eseguite allo stesso modo, indipendentemente dall'infrastruttura sottostante. \cite{HPECloudArchitecture}
+\end{itemize}
+\section{Best practice per l'architettura cloud}
+Un'architettura cloud ben definita dovrebbe includere best practice e linee guida per aiutare gli architetti a creare soluzioni cloud che siano performanti e sicure. Le best practice dovrebbero includere quanto segue: \cite{IBMArchitecture}
+\begin{itemize}
+    \item Automatizzare le operazioni per ridurre i costi e supportare l'affidabilità, la disponibilità e la sicurezza della soluzione.
+    \item Rispettare la data gravity, ovvero il concetto che i dati hanno una loro massa e una loro forza, si dovrebbero adottare strategie di backup e disaster recovery assicurando la protezione dei dati e la continuità operativa in caso di guasti o disastri. Maggiore è la massa di dati, maggiore è lo sforzo necessario per spostarli, che di solito si traduce in più tempo, costi e potenza di elaborazione. 
+    \item Scegliere la piattaforma migliore per ogni workload per utilizzarne al meglio le funzionalità al fine di ottimizzare i livelli di servizio e le caratteristiche operative del workload.
+\end{itemize}
+

@@ -1,0 +1,117 @@
+\chapter{Introduzione Al Cloud Computing}
+
+\section{Cos'è il cloud computing}
+Il cloud computing è un modello di erogazione di servizi offerti su richiesta da un fornitore a un utente finale in maniera on-demand e attraverso Internet.
+Volendo essere più precisi per addentrarci nell'argomento possiamo utilizzare la definizione di Cloud del NIST (National Institute of Standards and Technology):
+“Il cloud computing è un modello che consente un accesso di rete onnipresente, comodo e \textit{on-demand} \footnote{Per on demand o su richiesta, nel campo dell'informatica aziendale, si intende l'accesso alle risorse informatiche tramite internet solo quando necessario, eventualmente pagando le stesse in base all'utilizzo e non in base a un canone fisso, o acquistando una licenza una tantum. \cite{OnDemand} \\} a un pool condiviso
+di risorse informatiche configurabili (ad esempio reti, server, storage, applicazioni e servizi) che
+possono essere rapidamente fornite e rilasciate con il minimo sforzo di gestione o interazione con il fornitore di servizi.
+Questo modello cloud è composto da cinque caratteristiche essenziali, tre modelli di servizio e quattro modelli di distribuzione.”
+\cite{NIST}
+
+
+In un modello cloud possiamo quindi riconoscere tre figure essenziali: \cite{WCloud}
+\begin{itemize}
+    \item il fornitore di servizi: che offre servizi quali archiviazione,server e applicazioni solitamente secondo un modello \textit{pay per use} (PPU) 
+    \footnote{Il termine PPU indica una forma di remunerazione in base alla quale si paga in funzione dell'utilizzo effettivo. \cite{PPU}}.
+    \item utente amministratore: sceglie e configura i servizi offerti dal fornitore per l'utente finale.
+    \item utente finale: utilizza i servizi forniti. 
+\end{itemize}
+In determinati casi il cliente amministratore e il cliente finale possono coincidere.
+
+
+%\myemptypage
+%\hspace{1em} % per aggiungere una linea vuota spazio
+\newpage
+\subsection{Precisazione}
+ Molto spesso i servizi cloud vengono erroneamente fraintesi con i servizi offerti da un datacenter, riguardo a questo la direttiva UE 2022/2555 NIS2 definisce: \cite{NIS2}
+ \begin{itemize}
+    \item Cloud: I servizi di cloud computing dovrebbero comprendere servizi digitali che consentono l'amministrazione su richiesta di un pool scalabile ed elastico di risorse di calcolo condivisibili e l'ampio accesso remoto a quest'ultimo, anche quando tali risorse sono distribuite in varie ubicazioni.
+    \item Datacenter: Il termine «servizio di data center» dovrebbe applicarsi alla fornitura di un servizio che comprende strutture, o gruppi di strutture, dedicate a ospitare, interconnettere e far funzionare in modo centralizzato apparecchiature informatiche e di rete che forniscono servizi di conservazione, elaborazione e trasporto di dati insieme a tutti gli impianti e le infrastrutture per la distribuzione dell'energia e il controllo ambientale. 
+\end{itemize}
+
+\section{Caratteristiche essenziali dei modelli cloud}
+Come definito in precedenza il modello cloud è composto da cinque caratteristiche fondamentali: \cite{NIST}
+\cite{Atlassian}
+ \begin{itemize}
+    \item On-demand self-service : Un utente può richiedere i vari servizi offerti dal fornitore in totale autonomia, senza dover passare per gestori e/o provider.
+    \item Broad network access: Tramite hardware fisico distribuito a livello globale, le funzionalità offerte sono disponibili in rete e accessibili ovunque.
+    \item Resource Pooling: Le risorse informatiche in un modello cloud vengono raggruppate per servire più utenti
+    utilizzando un modello multi-tenant, in questo modo le risorse sono suddivise dinamicamente in base alla domanda dell'utente rendendo così  l'hardware cloud completamente ottimizzato per il massimo utilizzo.
+    \item Rapid elasticity: Le infrastrutture cloud possono crescere e ridursi in modo dinamico, consentendo agli utenti di richiedere che le loro risorse di calcolo si adattino automaticamente alle richieste di traffico, avendo così la massima scalabilità.
+    \item Measured service: I sistemi cloud controllano e ottimizzano automaticamente l'utilizzo delle risorse che possono essere
+    monitorate, controllate e segnalate (tipicamente usate nei PPU - pay per use), garantendo trasparenza sui costi di utilizzo del servizio utilizzato al consumatore.
+\end{itemize}
+\newpage
+\section{Modelli di servizio} \label{ModelliDiServizio}
+I servizi cloud sono formati da infrastrutture, piattaforme o software in hosting presso provider esterni e messi a disposizione degli utenti attraverso Internet.
+Partendo dal modello “base” chiamato on-premise/on-site in cui è l’utente il proprietario e responsabile di ogni aspetto, dall'hardware alle applicazioni, fino alla scalabilità, esistono tre modelli di servizi cloud principali:
+\textit{IaaS} (Infrastructure as a Service \footnote{L’espressione "As a Service" indica che il modello di servizio viene offerto da una terza parte nel cloud e che quindi non è necessario acquistare, gestire o utilizzare hardware, software o strumenti come nel modello on-premise. \cite{GoogleCloud} \\}), \textit{PaaS} (Platform as a Service) e \textit{SaaS}  (Software as a Service). 
+
+
+Questi termini si riferiscono al modo in cui il cloud viene utilizzato all’interno dell’organizzazione e al grado di gestione di cui si è responsabili. Di seguito andremo a definirne le caratteristiche:
+ \cite{RedHat}
+ \begin{itemize}
+    \item IaaS: Con il modello Infrastructure as a Service, o IaaS, il provider fornisce al cliente un'infrastruttura completa che include server fisici, storage, rete e componenti di virtualizzazione,
+    in questo modo l'utente accede a tale infrastruttura, sostanzialmente a noleggio, tramite un'\textit{API} \footnote{API o application Programming Interface, ovvero "interfaccia di programmazione delle applicazioni", in informatica è un insieme di regole e protocolli che consente a diversi programmi software e servizi di comunicare e scambiare dati, caratteristiche o funzionalità tra loro.\cite{IBMAPI} \\} o una dashboard specifica, e gestisce aspetti come il sistema operativo, le app e il \textit{middleware} \footnote{Il middleware è un software che funge da strato intermedio tra le applicazioni e le componenti sottostanti, come ad esempio sistemi operativi, database o hardware, facilitando la comunicazione, l'integrazione e la gestione delle risorse nei sistemi distribuiti. Il suo ruolo primario è quello di nascondere la complessità dell'infrastruttura sottostante, garantendo interoperabilità, scalabilità e sicurezza. \cite{Middleware} \\} senza doversi preoccupare della gestione, della manutenzione o dell'aggiornamento dell'hardware sottostante, dei data center, delle connessioni di rete o degli interventi in caso di guasti.
+    Questo modello consente quindi alle aziende di ridurre i costi legati all’infrastruttura fisica e di  concentrarsi sugli aspetti applicativi e di business, lasciando al provider le complessità operative e la continuità del servizio.
+    \item SaaS: Con il modello software as a Service, o SaaS, il provider gestisce interamente un'applicazione software che fornisce agli utenti; solitamente, queste applicazioni sono accessibili tramite un browser web che permette di eliminare la necessità di dover installare le applicazioni sui computer dei singoli utenti. L’utente che si connette a queste applicazioni tramite un'API o una dashboard dedicata dovrà preoccuparsi solamente della manutenzione del software.
+    \item PaaS: con il modello Platform as a Service, o PaaS, il provider fornisce e si occupa di tutte le risorse hardware e software per lo sviluppo delle applicazioni tramite cloud, mentre l'utente gestisce le app eseguite sulla piattaforma e i dati che esse utilizzano.
+    Questi servizi, che inoltre offrono agli utenti una piattaforma cloud condivisa per lo sviluppo e la gestione delle applicazioni (un aspetto importante della metodologia \textit{DevOps} \footnote{DevOps (dalla contrazione inglese di development, "sviluppo", e operations, qui simile a "messa in produzione" o "deployment") è una metodologia di sviluppo del software utilizzata in informatica che punta alla comunicazione, collaborazione e integrazione tra sviluppatori e addetti alle operations, puntando ad aiutare un'organizzazione a sviluppare in modo più rapido ed efficiente prodotti e servizi software.  \cite{DevOps}}), sono pensati soprattutto per sviluppatori e programmatori.
+\end{itemize}
+\vspace{2cm}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{modelli-cloud.png}
+    \caption{ Tabella modelli di servizio cloud}
+    \label{fig:modellDiServizioCloud}
+    \cite{RedHat}
+\end{figure}
+\newpage
+Oltre a queste tre principali categorie, è possibile trovare anche altri tipi di cloud che usano tecnologie differenti, come ad esempio i \textit{container} \footnote{Container: I container consentono di raggruppare e isolare le applicazioni insieme al relativo ambiente di runtime, che include tutti i file necessari per l'esecuzione. In questo modo è più facile spostare applicazioni tra gli ambienti (sviluppo, test, produzione, ecc.) conservandone tutte le funzionalità.  \cite{Container}
+} che hanno avuto sempre più successo nell’architettura a microservizi, portando alla creazione del Modello CaaS (Container as a Service).
+Con questo modello il provider fornisce e gestisce tutte le risorse hardware e software per lo sviluppo e il deployment delle applicazioni con i container utilizzati come risorsa principale al posto delle macchine virtuali.
+In questo modo sviluppatori e team delle operazioni IT possono sfruttare il modello CaaS per sviluppare, eseguire e gestire le applicazioni senza dover creare e mantenere l'infrastruttura o la piattaforma per l'esecuzione e la gestione dei container preoccupandosi solo della scrittura del codice e della gestione dei dati e delle applicazioni. \cite{GoogleCloud}
+\newpage
+\section{Modelli di distribuzione}
+Dopo aver analizzato le caratteristiche fondamentali del cloud computing, è importante capire come questa infrastruttura viene distribuita e resa disponibile agli utenti.
+In base a chi possiede e gestisce le risorse (hardware e  non), il modo in cui sono allocate e gli accessi concessi si denotano diverse tipologie di modelli di distribuzione: \cite{RedHat}
+ \begin{itemize}
+    \item Cloud pubblico: I cloud pubblici sono ambienti cloud basati su un'infrastruttura IT che non appartiene all'utente finale e solitamente vengono eseguiti off-premise (non fisicamente nei locali del cliente) anche se ad oggi molti provider di cloud pubblici eseguono i propri servizi nei datacenter on-premise dei propri clienti.
+    I provider di cloud pubblico più importanti sono Amazon Web Services (AWS), Google CLoud, IBM Cloud, Microsoft Azure e Alibaba Cloud.
+
+    Tutti i cloud diventano pubblici quando gli ambienti sono suddivisi e ridistribuiti su più \textit{tenant}\footnote{Un tenant può essere un singolo utente ma, più frequentemente, è un gruppo di utenti, come l'organizzazione di un cliente, che condivide un accesso comune all'istanza dell'applicazione e i privilegi al suo interno.\cite{Tenant}}. Nemmeno le strutture tariffarie caratterizzano più i cloud pubblici, poiché alcuni provider consentono ai tenant di usare i loro cloud gratuitamente. L'infrastruttura IT \textit{bare metal,} \footnote{È una forma di cloud service in cui l'utente noleggia una macchina fisica da un provider che non condivide con altri tenant.
+    In questo modo gli utenti hanno il controllo completo sulla macchina fisica e hanno la possibilità di scegliere il loro sistema operativo, evitare le problematiche legate ai vicini delle infrastrutture condivise e adattare hardware e software per carichi di lavoro specifici.\cite{BareMetal}} utilizzata dai provider di cloud pubblico, può essere astratta e venduta come IaaS, oppure sviluppata in piattaforma cloud e proposta come PaaS.
+    \item Cloud privato: I cloud privati sono ambienti cloud riservati a un singolo utente o gruppo ed eseguiti dietro il loro \textit{firewall.} \footnote{Nell'informatica e nell'ambito delle reti di computer, un firewall è un componente hardware e/o software di difesa perimetrale di una rete, che può anche svolgere funzioni di collegamento tra due o più segmenti di rete, o tra una rete e un computer locale, fornendo dunque una protezione in termini di sicurezza informatica della rete stessa e proteggendo il computer da malware o altri pericoli di internet. \cite{FireWall}}
+    Non occorre più che i cloud privati abbiano origine in un'infrastruttura IT on-premise. Le organizzazioni infatti realizzano i propri cloud privati su datacenter in affitto, di proprietà del fornitore e ubicati off-premise.
+    
+    Quando l'infrastruttura IT sottostante è dedicata a un singolo cliente, con un accesso completamente isolato, tutti i cloud diventano privati.
+    Questa strutturazione genera anche diversi sottotipi di cloud privato, tra cui:
+    \begin{itemize}
+        \item Cloud privato gestito: Permette di creare e usare un cloud privato che viene implementato, configurato e gestito da un fornitore terzo, questo lo rende adatto alle aziende di piccole dimensioni o con personale IT non specializzato.
+        \item Cloud dedicato: Si tratta di un cloud contenuto in un altro cloud che può esistere all'interno di un cloud pubblico o di un cloud privato. Ad esempio, il reparto contabilità di un'azienda può utilizzare il proprio cloud dedicato, ubicato all'interno del cloud privato aziendale.
+    \end{itemize}
+    \item Cloud ibrido: I cloud ibridi appaiono come un singolo ambiente IT creato a partire da più ambienti connessi tramite reti LAN (Local Area Network), WAN (Wide Area Network) o VPN (Virtual Private Network) e/o API.
+    Un cloud ibrido può, ad esempio, dover includere:
+    \begin{itemize}
+        \item Almeno un cloud privato e almeno un cloud pubblico.
+        \item Due o più cloud privati.
+        \item Due o più cloud pubblici.
+        \item Un ambiente bare metal o virtuale connesso almeno a un cloud, pubblico o privato.
+    \end{itemize}
+
+    Ogni sistema IT si trasforma in cloud ibrido quando le app che vi risiedono possono muoversi tra più ambienti, separati ma connessi, e questi ultimi devono essere gestiti come un singolo ambiente.
+    \item Multicloud: Un ambiente multicloud è formato da più di un servizio cloud e da più di un fornitore di servizi cloud, pubblici o privati. Tutti i cloud ibridi sono multicloud, ma non tutti i multicloud sono cloud ibridi. I multicloud diventano cloud ibridi quando i diversi cloud vengono connessi tramite una forma di integrazione o di orchestrazione.
+    L’utilizzo di questo ambiente  è sempre più frequente nelle aziende il cui è obiettivo è migliorare sicurezza e prestazioni attraverso l'utilizzo di più ambienti.
+\end{itemize}
+\vspace{2cm}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{cloud-architecture-table.jpg}
+    \caption{Pro e contro tra cloud pubblico e cloud privato}
+    \label{fig:pros and cons of cloud architecture}
+    \cite{ProsAndConsOfCloudArchitecture}
+\end{figure}
+
+
+ 
